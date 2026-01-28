@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Phone, Mail } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -20,9 +21,14 @@ export function Header() {
       <div className="container mx-auto px-4">
         <div className="flex h-20 items-center justify-between">
           <Link href="/" className="flex items-center space-x-2">
-            <div className="text-3xl font-black">
-              <span className="gradient-text">ITProBit</span>
-            </div>
+            <Image 
+              src="/logo.gif" 
+              alt="ITProBit Logo" 
+              width={180} 
+              height={50}
+              className="h-12 w-auto"
+              priority
+            />
           </Link>
 
           <nav className="hidden md:flex items-center gap-8">
