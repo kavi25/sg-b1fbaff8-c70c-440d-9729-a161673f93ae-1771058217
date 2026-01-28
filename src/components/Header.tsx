@@ -5,6 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Menu, X, Phone, Mail } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
+const navItems = [
+  { name: "Home", href: "/" },
+  { name: "About", href: "/about" },
+  { name: "Services", href: "/services" },
+  { name: "Blog", href: "/blog" },
+  { name: "Pricing", href: "/pricing" },
+  { name: "Contact", href: "/contact" },
+];
+
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
