@@ -1,98 +1,143 @@
-# 🚀 Quick Deployment Guide for netjs.itprobit.com
+# 🚀 Quick Deployment Guide for netjs.itprobit.com (Windows Server)
 
 ## Prerequisites
-- SSH access to your server
+- Windows Server 2016/2019/2022
+- Administrator access
 - Domain `netjs.itprobit.com` pointing to your server IP
-- Root or sudo access
 
 ---
 
 ## 📋 Quick Steps
 
-### 1️⃣ Connect to Your Server
-```bash
-ssh username@netjs.itprobit.com
-# or
-ssh username@your-server-ip
+### 1️⃣ Install Node.js
+```powershell
+# Download and install Node.js 18.x LTS from:
+# https://nodejs.org/
+
+# Verify in PowerShell
+node --version
+npm --version
 ```
 
-### 2️⃣ Install Required Software
-```bash
-# Install Node.js 18.x
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-sudo apt-get install -y nodejs
-
-# Install PM2
-sudo npm install -g pm2
-
-# Install Nginx
-sudo apt-get update
-sudo apt-get install -y nginx
+### 2️⃣ Install PM2 Globally
+```powershell
+# Open PowerShell as Administrator
+npm install -g pm2
+npm install -g pm2-windows-startup
+pm2-startup install
 ```
 
-### 3️⃣ Upload Project Files
-```bash
-# Create directory
-sudo mkdir -p /var/www/netjs.itprobit.com
-sudo chown -R $USER:$USER /var/www/netjs.itprobit.com
-cd /var/www/netjs.itprobit.com
-
-# Upload all project files here (via SCP, FTP, or Git)
+### 3️⃣ Create Project Directory
+```powershell
+New-Item -ItemType Directory -Path "C:\inetpub\wwwroot\netjs.itprobit.com"
+cd C:\inetpub\wwwroot\netjs.itprobit.com
 ```
 
-**From your local machine:**
-```bash
-scp -r * username@netjs.itprobit.com:/var/www/netjs.itprobit.com/
-```
+### 4️⃣ Upload Project Files
+- Use Remote Desktop to copy files, OR
+- Use FileZilla/WinSCP to upload files, OR
+- Use Git to clone repository
 
-### 4️⃣ Configure Environment
-```bash
-cd /var/www/netjs.itprobit.com
-nano .env.local
+Upload all project files to: `C:\inetpub\wwwroot\netjs.itprobit.com\`
+
+### 5️⃣ Configure Environment
+```powershell
+cd C:\inetpub\wwwroot\netjs.itprobit.com
+notepad .env.local
 ```
 
 Paste this and update with your Supabase credentials:
-```
+```env
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_key
 NEXT_PUBLIC_SITE_URL=https://netjs.itprobit.com
+NODE_ENV=production
 ```
 
-### 5️⃣ Build and Start
-```bash
-# Install and build
+### 6️⃣ Build and Start
+```powershell
+# Install dependencies
 npm install
+
+# Build production
 npm run build
 
 # Start with PM2
 pm2 start ecosystem.config.js
 pm2 save
-pm2 startup
 ```
 
-### 6️⃣ Configure Nginx
-```bash
-# Copy nginx config
-sudo cp nginx.conf /etc/nginx/sites-available/netjs.itprobit.com
+### 7️⃣ Configure Windows Firewall
+```powershell
+# Open PowerShell as Administrator
 
-# Enable site
-sudo ln -s /etc/nginx/sites-available/netjs.itprobit.com /etc/nginx/sites-enabled/
+# Allow HTTP (Port 80)
+New-NetFirewallRule -DisplayName "HTTP Inbound" -Direction Inbound -Protocol TCP -LocalPort 80 -Action Allow
 
-# Test and restart
-sudo nginx -t
-sudo systemctl restart nginx
+# Allow HTTPS (Port 443)
+New-NetFirewallRule -DisplayName "HTTPS Inbound" -Direction Inbound -Protocol TCP -LocalPort 443 -Action Allow
 ```
 
-### 7️⃣ Setup SSL (HTTPS)
-```bash
-# Install Certbot
-sudo apt-get install -y certbot python3-certbot-nginx
+### 8️⃣ Setup IIS Reverse Proxy
 
-# Get certificate
-sudo certbot --nginx -d netjs.itprobit.com
+#### Install Required Components
+1. Download and install **URL Rewrite**: https://www.iis.net/downloads/microsoft/url-rewrite
+2. Download and install **ARR**: https://www.iis.net/downloads/microsoft/application-request-routing
+
+#### Enable Proxy in ARR
+1. Open **IIS Manager**
+2. Click server name
+3. Double-click **Application Request Routing Cache**
+4. Click **Server Proxy Settings** (right panel)
+5. Check **Enable proxy**
+6. Click **Apply**
+
+#### Create IIS Site
+1. In **IIS Manager**, right-click **Sites** → **Add Website**
+2. **Site name**: netjs.itprobit.com
+3. **Physical path**: `C:\inetpub\wwwroot\netjs.itprobit.com`
+4. **Binding**: HTTP, Port 80, Hostname: netjs.itprobit.com
+5. Click **OK**
+
+#### Create web.config
+```powershell
+cd C:\inetpub\wwwroot\netjs.itprobit.com
+notepad web.config
 ```
 
-### 8️⃣ Verify
+Paste this content:
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <system.webServer>
+        <rewrite>
+            <rules>
+                <rule name="ReverseProxyInboundRule1" stopProcessing="true">
+                    <match url="(.*)" />
+                    <action type="Rewrite" url="http://localhost:3000/{R:1}" />
+                </rule>
+            </rules>
+        </rewrite>
+    </system.webServer>
+</configuration>
+```
+
+### 9️⃣ Setup SSL with win-acme
+```powershell
+# Download win-acme from: https://www.win-acme.com/
+# Extract to C:\win-acme
+
+cd C:\win-acme
+.\wacs.exe
+
+# Follow prompts:
+# - Choose N (New certificate)
+# - Choose 1 (Single binding of an IIS site)
+# - Select your site
+# - Certificate will be automatically installed
+```
+
+### 🔟 Verify
 - Visit: `https://netjs.itprobit.com`
 - Admin: `https://netjs.itprobit.com/admin/setup`
 
@@ -108,9 +153,9 @@ For detailed instructions, see `DEPLOYMENT.md`
 
 ## 🔄 To Update Later
 
-```bash
-cd /var/www/netjs.itprobit.com
-# Upload new files
+```powershell
+cd C:\inetpub\wwwroot\netjs.itprobit.com
+# Upload new files via RDP/FTP
 npm install
 npm run build
 pm2 restart itprobit-app
@@ -120,14 +165,33 @@ pm2 restart itprobit-app
 
 ## 🐛 Having Issues?
 
-```bash
+```powershell
 # Check app status
 pm2 logs itprobit-app
+pm2 status
 
-# Check Nginx
-sudo systemctl status nginx
+# Check if running
+netstat -ano | findstr :3000
 
 # Restart everything
 pm2 restart itprobit-app
-sudo systemctl restart nginx
+
+# Check IIS logs
+# C:\inetpub\logs\LogFiles
+```
+
+---
+
+## 💡 Quick Commands
+
+```powershell
+# PM2 Commands
+pm2 list                    # List all processes
+pm2 logs itprobit-app       # View logs
+pm2 restart itprobit-app    # Restart app
+pm2 monit                   # Monitor resources
+
+# Windows Service
+pm2 save                    # Save process list
+pm2-startup install         # Run on Windows boot
 ```

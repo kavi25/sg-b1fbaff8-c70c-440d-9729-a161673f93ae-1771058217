@@ -1,41 +1,49 @@
-# 📋 Server Deployment Checklist for netjs.itprobit.com
+# 📋 Server Deployment Checklist for netjs.itprobit.com (Windows Server)
 
-Use this checklist to ensure everything is properly configured.
+Use this checklist to ensure everything is properly configured on Windows Server.
 
 ---
 
 ## 🔧 System Requirements
 
+- [ ] **Windows Server 2016/2019/2022** installed
+  ```powershell
+  systeminfo | findstr /C:"OS Name"
+  ```
+
 - [ ] **Node.js 18.x or higher** installed
-  ```bash
+  ```powershell
   node --version  # Should show v18.x.x or higher
   ```
 
 - [ ] **npm 9.x or higher** installed
-  ```bash
+  ```powershell
   npm --version  # Should show 9.x.x or higher
   ```
 
 - [ ] **PM2** process manager installed globally
-  ```bash
+  ```powershell
   pm2 --version
   ```
 
-- [ ] **Nginx** web server installed and running
-  ```bash
-  sudo systemctl status nginx
+- [ ] **pm2-windows-startup** installed
+  ```powershell
+  npm list -g pm2-windows-startup
   ```
+
+- [ ] **IIS (Internet Information Services)** installed and running
+  - Open Server Manager → Add Roles and Features → Web Server (IIS)
 
 ---
 
 ## 📁 Files & Directories
 
-- [ ] Project files uploaded to `/var/www/netjs.itprobit.com`
+- [ ] Project files uploaded to `C:\inetpub\wwwroot\netjs.itprobit.com`
 - [ ] All node_modules deleted before upload (will reinstall on server)
 - [ ] `.next` folder deleted before upload (will rebuild on server)
 - [ ] `.env.local` created on server with production credentials
-- [ ] File permissions set correctly (`chmod -R 755`)
-- [ ] User ownership set correctly (`chown -R $USER:$USER`)
+- [ ] `web.config` created for IIS reverse proxy
+- [ ] File permissions set correctly (IIS_IUSRS has read access)
 
 ---
 
@@ -45,6 +53,7 @@ Use this checklist to ensure everything is properly configured.
 - [ ] `NEXT_PUBLIC_SUPABASE_URL` configured
 - [ ] `NEXT_PUBLIC_SUPABASE_ANON_KEY` configured
 - [ ] `NEXT_PUBLIC_SITE_URL=https://netjs.itprobit.com` set
+- [ ] `NODE_ENV=production` set
 - [ ] Stripe keys configured (if using payments)
 - [ ] Environment variables validated (no syntax errors)
 
@@ -54,7 +63,7 @@ Use this checklist to ensure everything is properly configured.
 
 - [ ] Dependencies installed: `npm install`
 - [ ] Production build successful: `npm run build`
-- [ ] No build errors in output
+- [ ] No build errors in PowerShell output
 - [ ] `.next` folder created in project root
 - [ ] Build size is reasonable (check output)
 
@@ -62,66 +71,91 @@ Use this checklist to ensure everything is properly configured.
 
 ## 🚀 PM2 Configuration
 
+- [ ] PM2 Windows startup installed: `pm2-startup install`
 - [ ] Application started: `pm2 start ecosystem.config.js`
 - [ ] Application shows "online" status: `pm2 status`
 - [ ] No errors in logs: `pm2 logs itprobit-app`
-- [ ] PM2 startup configured: `pm2 startup`
 - [ ] PM2 process list saved: `pm2 save`
+- [ ] PM2 configured to start on Windows boot
 - [ ] Test PM2 restart: `pm2 restart itprobit-app`
+- [ ] Port 3000 is accessible: `netstat -ano | findstr :3000`
 
 ---
 
-## 🌐 Nginx Configuration
+## 🌐 IIS Configuration
 
-- [ ] Nginx config file created at `/etc/nginx/sites-available/netjs.itprobit.com`
-- [ ] Symlink created: `/etc/nginx/sites-enabled/netjs.itprobit.com`
-- [ ] Nginx config test passed: `sudo nginx -t`
-- [ ] Nginx restarted: `sudo systemctl restart nginx`
-- [ ] Nginx enabled on boot: `sudo systemctl enable nginx`
-- [ ] Port 80 accessible (test with curl or browser)
+- [ ] **URL Rewrite Module** installed
+  - Download from: https://www.iis.net/downloads/microsoft/url-rewrite
+
+- [ ] **Application Request Routing (ARR)** installed
+  - Download from: https://www.iis.net/downloads/microsoft/application-request-routing
+
+- [ ] ARR proxy enabled (IIS → ARR Cache → Server Proxy Settings → Enable proxy)
+
+- [ ] IIS site created with:
+  - Site name: netjs.itprobit.com
+  - Physical path: `C:\inetpub\wwwroot\netjs.itprobit.com`
+  - Binding: HTTP, Port 80, Hostname: netjs.itprobit.com
+
+- [ ] `web.config` created with reverse proxy rules
+
+- [ ] IIS site is started (green icon in IIS Manager)
+
+- [ ] Site accessible locally: `http://localhost`
 
 ---
 
 ## 🔒 SSL/HTTPS Configuration
 
-- [ ] Certbot installed: `sudo apt-get install certbot python3-certbot-nginx`
-- [ ] SSL certificate obtained: `sudo certbot --nginx -d netjs.itprobit.com`
+- [ ] **win-acme** downloaded and extracted to `C:\win-acme`
+  - Download from: https://www.win-acme.com/
+
+- [ ] SSL certificate obtained: `C:\win-acme\wacs.exe`
+
+- [ ] HTTPS binding added to IIS site (Port 443)
+
+- [ ] Certificate bound to site in IIS
+
 - [ ] HTTPS redirect working (HTTP → HTTPS)
+
 - [ ] SSL grade A or better (test at ssllabs.com)
-- [ ] Auto-renewal configured: `sudo certbot renew --dry-run`
+
+- [ ] Auto-renewal configured with win-acme scheduled task
 
 ---
 
 ## 🌍 DNS & Domain
 
-- [ ] DNS A record points to server IP address
-- [ ] `netjs.itprobit.com` resolves to correct IP: `nslookup netjs.itprobit.com`
+- [ ] DNS A record points to server's public IP address
+- [ ] `netjs.itprobit.com` resolves to correct IP:
+  ```powershell
+  nslookup netjs.itprobit.com
+  ```
 - [ ] DNS propagation complete (may take up to 48 hours)
 - [ ] Domain accessible via browser
 
 ---
 
-## 🔥 Firewall Configuration
+## 🔥 Windows Firewall Configuration
 
 - [ ] Port 80 (HTTP) open
-  ```bash
-  sudo ufw allow 80/tcp
+  ```powershell
+  New-NetFirewallRule -DisplayName "HTTP Inbound" -Direction Inbound -Protocol TCP -LocalPort 80 -Action Allow
   ```
 
 - [ ] Port 443 (HTTPS) open
-  ```bash
-  sudo ufw allow 443/tcp
+  ```powershell
+  New-NetFirewallRule -DisplayName "HTTPS Inbound" -Direction Inbound -Protocol TCP -LocalPort 443 -Action Allow
   ```
 
-- [ ] Port 22 (SSH) open
-  ```bash
-  sudo ufw allow 22/tcp
+- [ ] Port 3389 (RDP) open for remote access
+  ```powershell
+  New-NetFirewallRule -DisplayName "RDP Inbound" -Direction Inbound -Protocol TCP -LocalPort 3389 -Action Allow
   ```
 
-- [ ] Firewall enabled
-  ```bash
-  sudo ufw enable
-  sudo ufw status
+- [ ] Firewall rules verified:
+  ```powershell
+  Get-NetFirewallRule | Where-Object {$_.DisplayName -like "*HTTP*" -or $_.DisplayName -like "*RDP*"}
   ```
 
 ---
@@ -137,18 +171,26 @@ Use this checklist to ensure everything is properly configured.
 - [ ] Services pages load: `/services/*`
 - [ ] Contact form works: `/contact`
 - [ ] Payment flow works (if enabled): `/pricing`
-- [ ] No console errors in browser DevTools
+- [ ] No console errors in browser DevTools (F12)
 - [ ] Mobile responsive (test on phone)
+- [ ] All images and assets load correctly
 
 ---
 
 ## 📊 Monitoring & Logs
 
 - [ ] PM2 logs accessible: `pm2 logs itprobit-app`
-- [ ] Nginx access logs: `tail -f /var/log/nginx/access.log`
-- [ ] Nginx error logs: `tail -f /var/log/nginx/error.log`
-- [ ] Disk space sufficient: `df -h`
-- [ ] Memory usage acceptable: `free -h`
+- [ ] IIS logs location: `C:\inetpub\logs\LogFiles\W3SVC[site-id]\`
+- [ ] Event Viewer configured (Windows Logs → Application)
+- [ ] Disk space sufficient: 
+  ```powershell
+  Get-PSDrive C
+  ```
+- [ ] Memory usage acceptable:
+  ```powershell
+  Get-Counter '\Memory\Available MBytes'
+  ```
+- [ ] CPU usage normal: Open Task Manager
 
 ---
 
@@ -163,38 +205,67 @@ Use this checklist to ensure everything is properly configured.
 - [ ] Test all features thoroughly
 - [ ] Set up monitoring/uptime alerts (optional)
 - [ ] Document custom configurations
+- [ ] Configure Windows Defender exclusions for project folder (if needed)
+- [ ] Set up automated backups
 
 ---
 
 ## 🐛 Common Issues & Solutions
 
 ### Application won't start
-```bash
+```powershell
 pm2 logs itprobit-app
 # Check for errors, usually environment variables or port conflicts
+
+# Check if port is in use
+netstat -ano | findstr :3000
+
+# Kill process if needed
+taskkill /PID <PID> /F
 ```
 
-### 502 Bad Gateway
-```bash
-# Check if app is running
+### 502 Bad Gateway or IIS Error
+```powershell
+# Check if PM2 app is running
 pm2 status
+
 # Restart services
 pm2 restart itprobit-app
-sudo systemctl restart nginx
+
+# Restart IIS site
+# IIS Manager → Right-click site → Manage Website → Restart
+
+# Check IIS logs
+Get-Content C:\inetpub\logs\LogFiles\W3SVC*\*.log -Tail 50
 ```
 
 ### Database connection errors
-```bash
+```powershell
 # Verify .env.local has correct Supabase credentials
-cat .env.local
+Get-Content C:\inetpub\wwwroot\netjs.itprobit.com\.env.local
+
 # Test connection by checking admin login page
+# Restart app
+pm2 restart itprobit-app
 ```
 
 ### SSL certificate issues
-```bash
-# Renew certificate
-sudo certbot renew
-sudo systemctl restart nginx
+```powershell
+# Renew certificate with win-acme
+cd C:\win-acme
+.\wacs.exe --renew
+
+# Check certificate in IIS
+# IIS Manager → Server Certificates → View certificate details
+```
+
+### Permission Issues
+```powershell
+# Give IIS_IUSRS full control
+icacls "C:\inetpub\wwwroot\netjs.itprobit.com" /grant "IIS_IUSRS:(OI)(CI)F" /T
+
+# Reset permissions
+icacls "C:\inetpub\wwwroot\netjs.itprobit.com" /reset /T
 ```
 
 ---
@@ -204,17 +275,51 @@ sudo systemctl restart nginx
 - **Deployment Guide**: See `DEPLOYMENT.md` for detailed instructions
 - **Quick Start**: See `QUICK_START.md` for rapid deployment steps
 - **PM2 Docs**: https://pm2.keymetrics.io/docs/usage/quick-start/
-- **Nginx Docs**: https://nginx.org/en/docs/
+- **IIS Docs**: https://docs.microsoft.com/en-us/iis/
 - **Next.js Docs**: https://nextjs.org/docs
 - **Supabase Docs**: https://supabase.com/docs
+- **win-acme Docs**: https://www.win-acme.com/manual/getting-started
+
+---
+
+## 🪟 Windows-Specific Commands Reference
+
+```powershell
+# System Info
+systeminfo
+Get-ComputerInfo
+
+# Network
+netstat -ano                    # Show all connections
+ipconfig /all                   # Network configuration
+Test-NetConnection netjs.itprobit.com -Port 80
+
+# Services
+Get-Service | Where-Object {$_.Name -like "*w3svc*"}  # IIS service
+Restart-Service W3SVC          # Restart IIS
+
+# Processes
+Get-Process node               # Find Node.js processes
+Stop-Process -Name node -Force # Stop all Node processes
+
+# Disk Space
+Get-PSDrive
+Get-Volume
+
+# Event Viewer (GUI)
+eventvwr.msc
+
+# IIS Manager (GUI)
+inetmgr
+```
 
 ---
 
 ## ✨ Deployment Complete!
 
-Once all items are checked, your deployment is complete and your website is live!
+Once all items are checked, your deployment is complete and your website is live on Windows Server!
 
 **Site URL**: https://netjs.itprobit.com
 **Admin Panel**: https://netjs.itprobit.com/admin
 
-Congratulations! 🎉
+Congratulations! 🎉🪟
