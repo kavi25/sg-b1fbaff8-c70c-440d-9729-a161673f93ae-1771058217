@@ -17,7 +17,7 @@ export default function Contact() {
     email: "",
     phone: "",
     service: "",
-    message: "",
+    message: ""
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle");
@@ -25,28 +25,28 @@ export default function Contact() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
+
     // Simulate form submission
     setTimeout(() => {
       setIsSubmitting(false);
       setSubmitStatus("success");
       setFormData({ name: "", email: "", phone: "", service: "", message: "" });
-      
+
       // Reset success message after 5 seconds
       setTimeout(() => setSubmitStatus("idle"), 5000);
     }, 1500);
   };
 
   const handleChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   return (
     <>
-      <SEO 
+      <SEO
         title="Contact Us - ITProBit | Get In Touch For Software Services"
-        description="Contact ITProBit for software testing, web development, mobile apps, and digital solutions. Call +44 7438 834547 or send us a message."
-      />
+        description="Contact ITProBit for software testing, web development, mobile apps, and digital solutions. Call +44 7438 834547 or send us a message." />
+
       <div className="min-h-screen bg-white dark:bg-gray-950">
         <Header />
         
@@ -55,8 +55,8 @@ export default function Contact() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-center mb-16"
-            >
+              className="text-center mb-16">
+
               <h1 className="text-5xl md:text-6xl font-black mb-6 text-gray-900 dark:text-white">
                 Get In <span className="gradient-text">Touch</span>
               </h1>
@@ -71,8 +71,8 @@ export default function Contact() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.2 }}
-                className="space-y-6"
-              >
+                className="space-y-6">
+
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-3">
@@ -81,8 +81,8 @@ export default function Contact() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <a href="tel:+447438834547" className="text-lg font-semibold text-primary hover:underline">
-                      +44 7438 834547
+                    <a href="tel:+447438834547" className="text-lg font-semibold text-primary hover:underline">+447718320149
+
                     </a>
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
                       Monday - Friday: 9am - 6pm GMT
@@ -145,8 +145,8 @@ export default function Contact() {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.3 }}
-                className="lg:col-span-2"
-              >
+                className="lg:col-span-2">
+
                 <Card className="shadow-2xl">
                   <CardHeader>
                     <CardTitle className="text-3xl">Send Us a Message</CardTitle>
@@ -164,8 +164,8 @@ export default function Contact() {
                             placeholder="John Doe"
                             value={formData.name}
                             onChange={(e) => handleChange("name", e.target.value)}
-                            required
-                          />
+                            required />
+
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="email">Email Address *</Label>
@@ -175,8 +175,8 @@ export default function Contact() {
                             placeholder="john@example.com"
                             value={formData.email}
                             onChange={(e) => handleChange("email", e.target.value)}
-                            required
-                          />
+                            required />
+
                         </div>
                       </div>
 
@@ -188,8 +188,8 @@ export default function Contact() {
                             type="tel"
                             placeholder="+44 7438 834547"
                             value={formData.phone}
-                            onChange={(e) => handleChange("phone", e.target.value)}
-                          />
+                            onChange={(e) => handleChange("phone", e.target.value)} />
+
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="service">Service Interested In *</Label>
@@ -218,21 +218,21 @@ export default function Contact() {
                           rows={6}
                           value={formData.message}
                           onChange={(e) => handleChange("message", e.target.value)}
-                          required
-                        />
+                          required />
+
                       </div>
 
-                      {submitStatus === "success" && (
-                        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 text-green-700 dark:text-green-300">
+                      {submitStatus === "success" &&
+                      <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 text-green-700 dark:text-green-300">
                           Thank you for your message! We'll get back to you within 24 hours.
                         </div>
-                      )}
+                      }
 
                       <Button
                         type="submit"
                         className="w-full gradient-primary text-white text-lg py-6"
-                        disabled={isSubmitting}
-                      >
+                        disabled={isSubmitting}>
+
                         {isSubmitting ? "Sending..." : "Send Message"}
                         <Send className="ml-2 h-5 w-5" />
                       </Button>
@@ -246,6 +246,6 @@ export default function Contact() {
 
         <Footer />
       </div>
-    </>
-  );
+    </>);
+
 }
