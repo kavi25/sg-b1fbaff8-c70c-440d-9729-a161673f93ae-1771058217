@@ -22,7 +22,7 @@ export const blogService = {
     const { data, error } = await supabase
       .from("blog_posts")
       .select("*")
-      .eq("status", "published")
+      .eq("published", true)
       .order("created_at", { ascending: false });
 
     if (error) throw error;
@@ -93,7 +93,7 @@ export const blogService = {
     const { data, error } = await supabase
       .from("blog_posts")
       .select("*")
-      .eq("status", "published")
+      .eq("published", true)
       .eq("category", category)
       .order("created_at", { ascending: false });
 
@@ -106,7 +106,7 @@ export const blogService = {
     const { data, error } = await supabase
       .from("blog_posts")
       .select("*")
-      .eq("status", "published")
+      .eq("published", true)
       .or(`title.ilike.%${query}%,excerpt.ilike.%${query}%,content.ilike.%${query}%`)
       .order("created_at", { ascending: false });
 

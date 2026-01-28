@@ -69,7 +69,7 @@ export const contactService = {
     const { data, error } = await supabase
       .from("contact_submissions")
       .select("*")
-      .eq("status", "unread")
+      .eq("status", "new")
       .order("created_at", { ascending: false });
 
     if (error) throw error;
