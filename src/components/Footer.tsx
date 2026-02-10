@@ -55,11 +55,11 @@ export function Footer() {
             <ul className="space-y-4">
               <li className="flex items-start gap-3">
                 <MapPin className="h-5 w-5 text-primary mt-1" />
-                <span>123 Tech Street, London,<br />United Kingdom, SW1A 1AA</span>
+                <span>45 Addingtion Road, London,<br />United Kingdom, CR0 3LW</span>
               </li>
               <li className="flex items-center gap-3">
                 <Phone className="h-5 w-5 text-primary" />
-                <a href="tel:+447438834547" className="hover:text-primary transition-colors">+44 7438 834547</a>
+                <a href="tel:+447718320149" className="hover:text-primary transition-colors">+44 7718 320149</a>
               </li>
               <li className="flex items-center gap-3">
                 <Mail className="h-5 w-5 text-primary" />
@@ -78,7 +78,7 @@ export function Footer() {
 
         <div className="border-t border-gray-800 pt-8 text-center text-sm">
           <p className="flex items-center justify-center gap-1">
-            © {currentYear} ITProBit. All rights reserved. Made with <Heart className="h-4 w-4 text-red-500 fill-red-500" /> in UK.
+            © 2019 ITProBit. All rights reserved. Made with in UK.
           </p>
         </div>
       </div>

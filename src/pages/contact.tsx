@@ -134,9 +134,9 @@ export default function Contact() {
                   </CardHeader>
                   <CardContent>
                     <p className="text-gray-700 dark:text-gray-300">
-                      123 Tech Street<br />
+                      45 Addingtion Road<br />
                       London, United Kingdom<br />
-                      SW1A 1AA
+                      CR0 3LW
                     </p>
                   </CardContent>
                 </Card>
