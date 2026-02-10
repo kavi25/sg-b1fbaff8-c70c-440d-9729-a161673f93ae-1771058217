@@ -7,6 +7,11 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  // Log request for debugging
+  console.log("=== Contact Email API Called ===");
+  console.log("Method:", req.method);
+  console.log("Has Resend API Key:", !!process.env.RESEND_API_KEY);
+  
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -16,12 +21,20 @@ export default async function handler(
 
     // Validate required fields
     if (!name || !email || !message) {
+      console.error("Missing required fields:", { name: !!name, email: !!email, message: !!message });
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    console.log("Sending contact email for:", { name, email });
+    console.log("Sending contact email for:", { name, email, service });
+
+    // Check if API key is configured
+    if (!process.env.RESEND_API_KEY) {
+      console.error("RESEND_API_KEY is not configured");
+      return res.status(500).json({ error: "Email service not configured. Please contact administrator." });
+    }
 
     // Send notification email to admin
+    console.log("Sending admin notification email...");
     const adminEmail = await resend.emails.send({
       from: "ITProBit Contact Form <noreply@itprobit.com>",
       to: "info@itprobit.com",
@@ -117,9 +130,10 @@ export default async function handler(
       `,
     });
 
-    console.log("Admin email sent:", adminEmail.data?.id);
+    console.log("✅ Admin email sent successfully:", adminEmail.data?.id);
 
     // Send auto-reply to customer
+    console.log("Sending customer auto-reply...");
     const customerEmail = await resend.emails.send({
       from: "ITProBit <noreply@itprobit.com>",
       to: email,
@@ -221,7 +235,8 @@ export default async function handler(
       `,
     });
 
-    console.log("Customer email sent:", customerEmail.data?.id);
+    console.log("✅ Customer email sent successfully:", customerEmail.data?.id);
+    console.log("=== Email sending completed successfully ===");
 
     return res.status(200).json({
       success: true,
@@ -229,7 +244,13 @@ export default async function handler(
       customerEmailId: customerEmail.data?.id,
     });
   } catch (error: any) {
-    console.error("Email sending error:", error);
+    console.error("❌ Email sending error:", error);
+    console.error("Error details:", {
+      message: error.message,
+      name: error.name,
+      stack: error.stack,
+    });
+    
     return res.status(500).json({
       error: "Failed to send email",
       details: error.message,
