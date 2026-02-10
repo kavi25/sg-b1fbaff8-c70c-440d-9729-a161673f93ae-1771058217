@@ -14,9 +14,12 @@ export default async function handler(
   try {
     const { name, email, phone, service, message } = req.body;
 
+    // Validate required fields
     if (!name || !email || !message) {
       return res.status(400).json({ error: "Missing required fields" });
     }
+
+    console.log("Sending contact email for:", { name, email });
 
     // Send notification email to admin
     const adminEmail = await resend.emails.send({
@@ -113,6 +116,8 @@ export default async function handler(
         </html>
       `,
     });
+
+    console.log("Admin email sent:", adminEmail.data?.id);
 
     // Send auto-reply to customer
     const customerEmail = await resend.emails.send({
@@ -215,6 +220,8 @@ export default async function handler(
         </html>
       `,
     });
+
+    console.log("Customer email sent:", customerEmail.data?.id);
 
     return res.status(200).json({
       success: true,
