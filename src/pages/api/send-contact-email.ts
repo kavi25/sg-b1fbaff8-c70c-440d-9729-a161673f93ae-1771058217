@@ -3,6 +3,10 @@ import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+// IMPORTANT: Resend testing mode only allows sending to account owner email
+// Change this to info@itprobit.com after domain verification
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "k.kavi25@gmail.com";
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -10,6 +14,7 @@ export default async function handler(
   // Log request for debugging
   console.log("=== Contact Email API Called ===");
   console.log("Method:", req.method);
+  console.log("Admin Email:", ADMIN_EMAIL);
   console.log("Has Resend API Key:", !!process.env.RESEND_API_KEY);
   
   if (req.method !== "POST") {
@@ -36,10 +41,10 @@ export default async function handler(
     // Send notification email to admin
     // Using onboarding@resend.dev as sender (verified by default)
     // Reply-to set to customer's email
-    console.log("Sending admin notification email...");
+    console.log(`Sending admin notification email to ${ADMIN_EMAIL}...`);
     const adminEmail = await resend.emails.send({
-      from: "ITProBit Contact Form <info@itprobit.com>",
-      to: "info@itprobit.com",
+      from: "ITProBit Contact Form <onboarding@resend.dev>",
+      to: ADMIN_EMAIL,
       replyTo: email,
       subject: `New Contact Form Submission from ${name}`,
       html: `
@@ -90,6 +95,14 @@ export default async function handler(
                 color: #666;
                 font-size: 12px;
               }
+              .notice {
+                background: #fff3cd;
+                border: 1px solid #ffc107;
+                color: #856404;
+                padding: 15px;
+                border-radius: 5px;
+                margin-top: 20px;
+              }
             </style>
           </head>
           <body>
@@ -98,6 +111,12 @@ export default async function handler(
               <p>ITProBit Website - ${new Date().toLocaleDateString()}</p>
             </div>
             <div class="content">
+              ${ADMIN_EMAIL !== "info@itprobit.com" ? `
+              <div class="notice">
+                <strong>⚠️ Note:</strong> This email is being sent to ${ADMIN_EMAIL} because Resend is in testing mode. 
+                After domain verification, emails will be sent to info@itprobit.com.
+              </div>
+              ` : ""}
               <div class="field">
                 <div class="field-label">👤 Name:</div>
                 <div class="field-value">${name}</div>
@@ -137,7 +156,7 @@ export default async function handler(
     // Send auto-reply to customer
     console.log("Sending customer auto-reply...");
     const customerEmail = await resend.emails.send({
-      from: "ITProBit <info@itprobit.com>",
+      from: "ITProBit <onboarding@resend.dev>",
       to: email,
       subject: "Thank you for contacting ITProBit",
       html: `
@@ -244,13 +263,16 @@ export default async function handler(
       success: true,
       adminEmailId: adminEmail.data?.id,
       customerEmailId: customerEmail.data?.id,
+      message: ADMIN_EMAIL !== "info@itprobit.com" 
+        ? `Emails sent to ${ADMIN_EMAIL}. After domain verification, they will be sent to info@itprobit.com.`
+        : "Emails sent successfully"
     });
   } catch (error: any) {
     console.error("❌ Email sending error:", error);
     console.error("Error details:", {
       message: error.message,
       name: error.name,
-      stack: error.stack,
+      statusCode: error.statusCode,
     });
     
     return res.status(500).json({
