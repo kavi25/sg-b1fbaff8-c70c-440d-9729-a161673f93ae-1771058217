@@ -34,9 +34,11 @@ export default async function handler(
     }
 
     // Send notification email to admin
+    // Using onboarding@resend.dev as sender (verified by default)
+    // Reply-to set to customer's email
     console.log("Sending admin notification email...");
     const adminEmail = await resend.emails.send({
-      from: "ITProBit Contact Form <noreply@itprobit.com>",
+      from: "ITProBit Contact Form <onboarding@resend.dev>",
       to: "info@itprobit.com",
       replyTo: email,
       subject: `New Contact Form Submission from ${name}`,
@@ -135,7 +137,7 @@ export default async function handler(
     // Send auto-reply to customer
     console.log("Sending customer auto-reply...");
     const customerEmail = await resend.emails.send({
-      from: "ITProBit <noreply@itprobit.com>",
+      from: "ITProBit <onboarding@resend.dev>",
       to: email,
       subject: "Thank you for contacting ITProBit",
       html: `
