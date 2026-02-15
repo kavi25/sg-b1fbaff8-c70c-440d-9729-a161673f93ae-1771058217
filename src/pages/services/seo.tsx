@@ -1,7 +1,7 @@
 import Head from "next/head";
 import { motion } from "framer-motion";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Search, TrendingUp, Globe, BarChart3, FileText, LinkIcon, Award, CheckCircle2 } from "lucide-react";
