@@ -10,7 +10,7 @@ import Link from "next/link";
 const pricingPlans = [
   {
     name: "Starter",
-    price: "499",
+    price: "199",
     currency: "£",
     period: "one-time",
     description: "Perfect for small projects and startups",
@@ -27,7 +27,7 @@ const pricingPlans = [
   },
   {
     name: "Professional",
-    price: "1,499",
+    price: "299",
     currency: "£",
     period: "one-time",
     description: "Ideal for growing businesses",
@@ -46,7 +46,7 @@ const pricingPlans = [
   },
   {
     name: "Enterprise",
-    price: "4,999",
+    price: "499",
     currency: "£",
     period: "one-time",
     description: "For large-scale projects and enterprises",
