@@ -17,6 +17,7 @@ export default function NewBlogPost() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [authorId, setAuthorId] = useState<string>("");
   const [formData, setFormData] = useState({
     title: "",
     slug: "",
@@ -26,8 +27,6 @@ export default function NewBlogPost() {
     category: "Testing",
     tags: "",
     published: false,
-    author_name: "ITProBit Team",
-    author_avatar: "https://ui-avatars.com/api/?name=ITProBit&background=3b82f6&color=fff",
   });
 
   useEffect(() => {
@@ -38,7 +37,9 @@ export default function NewBlogPost() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       router.push("/admin/login");
+      return;
     }
+    setAuthorId(user.id);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -57,11 +58,18 @@ export default function NewBlogPost() {
     setLoading(true);
     setError("");
 
+    if (!authorId) {
+      setError("You must be logged in to create a post");
+      setLoading(false);
+      return;
+    }
+
     try {
       const tagsArray = formData.tags.split(",").map(tag => tag.trim()).filter(Boolean);
       
       await blogService.createPost({
         ...formData,
+        author_id: authorId,
         tags: tagsArray,
         comments_count: 0,
       });

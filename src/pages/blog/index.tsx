@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { SEO } from "@/components/SEO";
@@ -11,15 +11,36 @@ import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { Search, Calendar, User, MessageCircle, ChevronRight, ChevronLeft } from "lucide-react";
 import { blogPosts, categories, tags } from "@/data/blogPosts";
+import { blogService } from "@/services/blogService";
 
 export default function BlogPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [dbPosts, setDbPosts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const postsPerPage = 6;
 
+  useEffect(() => {
+    loadPosts();
+  }, []);
+
+  const loadPosts = async () => {
+    try {
+      const posts = await blogService.getAllPosts();
+      setDbPosts(posts);
+    } catch (error) {
+      console.error("Error loading posts:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Combine database posts with static posts
+  const allPosts = [...dbPosts, ...blogPosts];
+
   // Filter posts based on search and category
-  const filteredPosts = blogPosts.filter(post => {
+  const filteredPosts = allPosts.filter(post => {
     const matchesSearch = post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          post.excerpt.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = !selectedCategory || post.category === selectedCategory;
@@ -32,7 +53,7 @@ export default function BlogPage() {
   const currentPosts = filteredPosts.slice(indexOfFirstPost, indexOfLastPost);
   const totalPages = Math.ceil(filteredPosts.length / postsPerPage);
 
-  const recentPosts = blogPosts.slice(0, 3);
+  const recentPosts = allPosts.slice(0, 3);
 
   return (
     <>
@@ -255,7 +276,7 @@ export default function BlogPage() {
                       >
                         <span className="flex justify-between">
                           <span>All Posts</span>
-                          <span>{blogPosts.length}</span>
+                          <span>{allPosts.length}</span>
                         </span>
                       </button>
                       {categories.map((category) => (

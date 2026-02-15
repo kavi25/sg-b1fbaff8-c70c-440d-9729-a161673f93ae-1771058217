@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import Image from "next/image";
@@ -13,13 +14,48 @@ import { Separator } from "@/components/ui/separator";
 import { motion } from "framer-motion";
 import { Calendar, User, MessageCircle, Share2, Facebook, Twitter, Linkedin, ArrowLeft, Tag } from "lucide-react";
 import { blogPosts } from "@/data/blogPosts";
+import { blogService } from "@/services/blogService";
 
 export default function BlogPostPage() {
   const router = useRouter();
   const { slug } = router.query;
+  const [post, setPost] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  const post = blogPosts.find((p) => p.slug === slug);
+  useEffect(() => {
+    if (slug) {
+      loadPost();
+    }
+  }, [slug]);
+
+  const loadPost = async () => {
+    try {
+      const posts = await blogService.getAllPosts();
+      const foundPost = posts.find((p) => p.slug === slug);
+      setPost(foundPost || null);
+    } catch (error) {
+      console.error("Error loading post:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const relatedPosts = blogPosts.filter((p) => p.id !== post?.id).slice(0, 3);
+
+  if (loading) {
+    return (
+      <>
+        <SEO title="Loading... - ITProBit" />
+        <div className="min-h-screen bg-gradient-to-b from-white via-blue-50/30 to-white dark:from-gray-900 dark:via-gray-900 dark:to-gray-900">
+          <Header />
+          <div className="max-w-4xl mx-auto px-4 py-32 text-center">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+          </div>
+          <Footer />
+        </div>
+      </>
+    );
+  }
 
   if (!post) {
     return (
@@ -44,6 +80,9 @@ export default function BlogPostPage() {
       </>
     );
   }
+
+  const authorName = post.profiles?.full_name || "ITProBit Team";
+  const authorAvatar = post.profiles?.avatar_url || "https://ui-avatars.com/api/?name=ITProBit&background=3b82f6&color=fff";
 
   return (
     <>
@@ -83,7 +122,7 @@ export default function BlogPostPage() {
               <div className="flex flex-wrap items-center gap-6 text-gray-600 dark:text-gray-300 mb-6">
                 <div className="flex items-center gap-2">
                   <User className="w-5 h-5" />
-                  <span>{post.author.name}</span>
+                  <span>{authorName}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar className="w-5 h-5" />
@@ -190,14 +229,14 @@ export default function BlogPostPage() {
                 <div className="flex gap-6 items-start">
                   <div className="relative w-20 h-20 rounded-full overflow-hidden flex-shrink-0">
                     <Image
-                      src={post.author.avatar}
-                      alt={post.author.name}
+                      src={authorAvatar}
+                      alt={authorName}
                       fill
                       className="object-cover"
                     />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold mb-2">{post.author.name}</h3>
+                    <h3 className="text-xl font-bold mb-2">{authorName}</h3>
                     <p className="text-gray-600 dark:text-gray-300">
                       Expert team of software testers and developers passionate about quality assurance,
                       automation testing, and delivering exceptional software solutions.
