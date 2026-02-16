@@ -11,13 +11,18 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, Save } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RichTextEditor } from "@/components/admin/RichTextEditor";
+import { ImageUploader } from "@/components/admin/ImageUploader";
+import { CodeEditor } from "@/components/admin/CodeEditor";
+import { ArrowLeft, Save, Eye, FileText, Image as ImageIcon, Code } from "lucide-react";
 
 export default function NewBlogPost() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [authorId, setAuthorId] = useState<string>("");
+  const [activeTab, setActiveTab] = useState("content");
   const [formData, setFormData] = useState({
     title: "",
     slug: "",
@@ -53,6 +58,22 @@ export default function NewBlogPost() {
     }
   };
 
+  const handleContentChange = (content: string) => {
+    setFormData(prev => ({ ...prev, content }));
+  };
+
+  const handleImageSelect = (url: string) => {
+    setFormData(prev => ({ ...prev, image: url }));
+  };
+
+  const handleCodeInsert = (code: string) => {
+    setFormData(prev => ({
+      ...prev,
+      content: prev.content + "\n\n" + code
+    }));
+    setActiveTab("content");
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -82,53 +103,67 @@ export default function NewBlogPost() {
     }
   };
 
+  const handlePreview = () => {
+    // Store draft in localStorage for preview
+    localStorage.setItem("blog_preview", JSON.stringify(formData));
+    window.open("/blog/preview", "_blank");
+  };
+
   return (
     <>
       <SEO title="New Blog Post - Admin" />
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="mb-6">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="mb-6 flex items-center justify-between">
             <Link href="/admin/blog">
               <Button variant="outline" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back to Blog Posts
               </Button>
             </Link>
+            <Button onClick={handlePreview} variant="outline">
+              <Eye className="h-4 w-4 mr-2" />
+              Preview
+            </Button>
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Create New Blog Post</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {error && (
-                  <Alert variant="destructive">
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
 
-                <div className="space-y-2">
-                  <Label htmlFor="title">Title *</Label>
-                  <Input
-                    id="title"
-                    name="title"
-                    value={formData.title}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-2xl">Create New Blog Post</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Basic Info */}
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="title">Title *</Label>
+                    <Input
+                      id="title"
+                      name="title"
+                      value={formData.title}
+                      onChange={handleInputChange}
+                      placeholder="Enter post title"
+                      required
+                    />
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="slug">Slug *</Label>
-                  <Input
-                    id="slug"
-                    name="slug"
-                    value={formData.slug}
-                    onChange={handleInputChange}
-                    required
-                  />
-                  <p className="text-sm text-gray-500">URL-friendly version of the title</p>
+                  <div className="space-y-2">
+                    <Label htmlFor="slug">URL Slug *</Label>
+                    <Input
+                      id="slug"
+                      name="slug"
+                      value={formData.slug}
+                      onChange={handleInputChange}
+                      placeholder="auto-generated-from-title"
+                      required
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -139,83 +174,137 @@ export default function NewBlogPost() {
                     value={formData.excerpt}
                     onChange={handleInputChange}
                     rows={3}
-                    required
-                  />
-                  <p className="text-sm text-gray-500">Short description for blog listing</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="content">Content *</Label>
-                  <Textarea
-                    id="content"
-                    name="content"
-                    value={formData.content}
-                    onChange={handleInputChange}
-                    rows={15}
-                    required
-                  />
-                  <p className="text-sm text-gray-500">Full blog post content (HTML supported)</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="image">Featured Image URL *</Label>
-                  <Input
-                    id="image"
-                    name="image"
-                    type="url"
-                    value={formData.image}
-                    onChange={handleInputChange}
-                    placeholder="https://images.unsplash.com/..."
+                    placeholder="Brief description of your post (shown in listings)"
                     required
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="category">Category *</Label>
-                  <Input
-                    id="category"
-                    name="category"
-                    value={formData.category}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="category">Category *</Label>
+                    <Input
+                      id="category"
+                      name="category"
+                      value={formData.category}
+                      onChange={handleInputChange}
+                      placeholder="e.g., Testing, Development, Design"
+                      required
+                    />
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="tags">Tags</Label>
-                  <Input
-                    id="tags"
-                    name="tags"
-                    value={formData.tags}
-                    onChange={handleInputChange}
-                    placeholder="automation, testing, selenium"
-                  />
-                  <p className="text-sm text-gray-500">Comma-separated list of tags</p>
+                  <div className="space-y-2">
+                    <Label htmlFor="tags">Tags</Label>
+                    <Input
+                      id="tags"
+                      name="tags"
+                      value={formData.tags}
+                      onChange={handleInputChange}
+                      placeholder="automation, testing, selenium (comma-separated)"
+                    />
+                  </div>
                 </div>
+              </CardContent>
+            </Card>
 
-                <div className="flex items-center space-x-2">
+            {/* Content Editor Tabs */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Content Editor</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Tabs value={activeTab} onValueChange={setActiveTab}>
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="content" className="flex items-center gap-2">
+                      <FileText className="w-4 h-4" />
+                      Content
+                    </TabsTrigger>
+                    <TabsTrigger value="images" className="flex items-center gap-2">
+                      <ImageIcon className="w-4 h-4" />
+                      Images
+                    </TabsTrigger>
+                    <TabsTrigger value="code" className="flex items-center gap-2">
+                      <Code className="w-4 h-4" />
+                      Code
+                    </TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="content" className="mt-6">
+                    <div className="space-y-2">
+                      <Label>Post Content *</Label>
+                      <RichTextEditor
+                        value={formData.content}
+                        onChange={handleContentChange}
+                        placeholder="Write your blog post content here..."
+                      />
+                      <p className="text-sm text-gray-500 mt-2">
+                        Use the toolbar to format text, add links, insert images, and more.
+                      </p>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="images" className="mt-6">
+                    <ImageUploader
+                      value={formData.image}
+                      onImageSelect={handleImageSelect}
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="code" className="mt-6">
+                    <CodeEditor onInsert={handleCodeInsert} />
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
+
+            {/* Publish Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Publish Settings</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <Label htmlFor="published" className="text-base">
+                      Publish Status
+                    </Label>
+                    <p className="text-sm text-gray-500">
+                      {formData.published ? "Post will be visible to everyone" : "Save as draft"}
+                    </p>
+                  </div>
                   <Switch
                     id="published"
                     checked={formData.published}
                     onCheckedChange={(checked) => setFormData(prev => ({ ...prev, published: checked }))}
                   />
-                  <Label htmlFor="published">Publish immediately</Label>
                 </div>
+              </CardContent>
+            </Card>
 
-                <div className="flex justify-end space-x-4">
-                  <Link href="/admin/blog">
-                    <Button type="button" variant="outline">
-                      Cancel
-                    </Button>
-                  </Link>
-                  <Button type="submit" disabled={loading}>
-                    <Save className="h-4 w-4 mr-2" />
-                    {loading ? "Creating..." : "Create Post"}
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
+            {/* Action Buttons */}
+            <div className="flex justify-end space-x-4">
+              <Link href="/admin/blog">
+                <Button type="button" variant="outline">
+                  Cancel
+                </Button>
+              </Link>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setFormData(prev => ({ ...prev, published: false }))}
+                disabled={loading}
+              >
+                Save as Draft
+              </Button>
+              <Button
+                type="submit"
+                disabled={loading}
+                className="bg-gradient-to-r from-blue-600 to-purple-600"
+              >
+                <Save className="h-4 w-4 mr-2" />
+                {loading ? "Creating..." : formData.published ? "Publish Post" : "Create Post"}
+              </Button>
+            </div>
+          </form>
         </div>
       </div>
     </>

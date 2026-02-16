@@ -86,3 +86,6 @@
     background-clip: text;
   }
 }
+
+/* Import Rich Text Editor Styles */
+@import './editor.css';
