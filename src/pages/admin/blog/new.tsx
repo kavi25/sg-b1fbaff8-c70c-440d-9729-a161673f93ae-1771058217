@@ -15,7 +15,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RichTextEditor } from "@/components/admin/RichTextEditor";
 import { ImageUploader } from "@/components/admin/ImageUploader";
 import { CodeEditor } from "@/components/admin/CodeEditor";
-import { ArrowLeft, Save, Eye, FileText, Image as ImageIcon, Code } from "lucide-react";
+import { AIWritingAssistant } from "@/components/admin/AIWritingAssistant";
+import { ArrowLeft, Save, Eye, FileText, Image as ImageIcon, Code, Sparkles } from "lucide-react";
 
 export default function NewBlogPost() {
   const router = useRouter();
@@ -205,6 +206,23 @@ export default function NewBlogPost() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* AI Writing Assistant */}
+            <AIWritingAssistant
+              onContentGenerated={(content) => setFormData(prev => ({ ...prev, content }))}
+              onTitleGenerated={(title) => {
+                setFormData(prev => ({ 
+                  ...prev, 
+                  title,
+                  slug: title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")
+                }));
+              }}
+              onExcerptGenerated={(excerpt) => setFormData(prev => ({ ...prev, excerpt }))}
+              onTagsGenerated={(tags) => setFormData(prev => ({ ...prev, tags }))}
+              currentContent={formData.content}
+              currentTitle={formData.title}
+              category={formData.category}
+            />
 
             {/* Content Editor Tabs */}
             <Card>
