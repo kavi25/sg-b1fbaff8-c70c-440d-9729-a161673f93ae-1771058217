@@ -1,4 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
+/* Import Rich Text Editor Styles - MUST be at the top */
+@import './editor.css';
 
 @tailwind base;
 @tailwind components;
@@ -86,6 +88,3 @@
     background-clip: text;
   }
 }
-
-/* Import Rich Text Editor Styles */
-@import './editor.css';
