@@ -10,17 +10,35 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
-import { Calendar, User, MessageCircle, Share2, Facebook, Twitter, Linkedin, ArrowLeft, Tag } from "lucide-react";
+import { Calendar, User, MessageCircle, Share2, Facebook, Twitter, Linkedin, ArrowLeft, Tag, Link2, CheckCircle } from "lucide-react";
 import { blogPosts } from "@/data/blogPosts";
 import { blogService } from "@/services/blogService";
+import { commentService } from "@/services/commentService";
+
+interface CommentFormData {
+  author_name: string;
+  author_email: string;
+  author_website: string;
+  comment_text: string;
+}
 
 export default function BlogPostPage() {
   const router = useRouter();
   const { slug } = router.query;
+  const { toast } = useToast();
   const [post, setPost] = useState<any>(null);
+  const [comments, setComments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [submittingComment, setSubmittingComment] = useState(false);
+  const [commentForm, setCommentForm] = useState<CommentFormData>({
+    author_name: "",
+    author_email: "",
+    author_website: "",
+    comment_text: ""
+  });
 
   useEffect(() => {
     if (slug) {
@@ -33,11 +51,95 @@ export default function BlogPostPage() {
       const posts = await blogService.getAllPosts();
       const foundPost = posts.find((p) => p.slug === slug);
       setPost(foundPost || null);
+      
+      if (foundPost) {
+        loadComments(foundPost.id);
+      }
     } catch (error) {
       console.error("Error loading post:", error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadComments = async (postId: string) => {
+    try {
+      const postComments = await commentService.getCommentsByPostId(postId);
+      setComments(postComments);
+    } catch (error) {
+      console.error("Error loading comments:", error);
+    }
+  };
+
+  const handleCommentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!post) return;
+
+    if (!commentForm.author_name.trim() || !commentForm.author_email.trim() || !commentForm.comment_text.trim()) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields (Name, Email, Comment)",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setSubmittingComment(true);
+    try {
+      await commentService.createComment({
+        post_id: post.id,
+        author_name: commentForm.author_name.trim(),
+        author_email: commentForm.author_email.trim(),
+        author_website: commentForm.author_website.trim(),
+        comment_text: commentForm.comment_text.trim()
+      });
+
+      toast({
+        title: "Comment Submitted!",
+        description: "Your comment is awaiting moderation and will be published soon.",
+      });
+
+      setCommentForm({
+        author_name: "",
+        author_email: "",
+        author_website: "",
+        comment_text: ""
+      });
+    } catch (error) {
+      console.error("Error submitting comment:", error);
+      toast({
+        title: "Error",
+        description: "Failed to submit comment. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setSubmittingComment(false);
+    }
+  };
+
+  const shareToFacebook = () => {
+    const url = encodeURIComponent(window.location.href);
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, "_blank", "width=600,height=400");
+  };
+
+  const shareToTwitter = () => {
+    const url = encodeURIComponent(window.location.href);
+    const text = encodeURIComponent(post?.title || "");
+    window.open(`https://twitter.com/intent/tweet?url=${url}&text=${text}`, "_blank", "width=600,height=400");
+  };
+
+  const shareToLinkedIn = () => {
+    const url = encodeURIComponent(window.location.href);
+    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}`, "_blank", "width=600,height=400");
+  };
+
+  const copyLinkToClipboard = () => {
+    navigator.clipboard.writeText(window.location.href);
+    toast({
+      title: "Link Copied!",
+      description: "Post URL has been copied to clipboard.",
+    });
   };
 
   const relatedPosts = blogPosts.filter((p) => p.id !== post?.id).slice(0, 3);
@@ -136,12 +238,12 @@ export default function BlogPostPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <MessageCircle className="w-5 h-5" />
-                  <span>{post.comments} Comments</span>
+                  <span>{comments.length} {comments.length === 1 ? "Comment" : "Comments"}</span>
                 </div>
               </div>
 
               <div className="flex flex-wrap gap-2 mb-8">
-                {post.tags.map((tag) => (
+                {post.tags.map((tag: string) => (
                   <Badge key={tag} variant="outline">
                     <Tag className="w-3 h-3 mr-1" />
                     {tag}
@@ -202,17 +304,41 @@ export default function BlogPostPage() {
                     Share this post
                   </h3>
                   <div className="flex gap-3">
-                    <Button size="sm" variant="outline" className="hover:bg-blue-600 hover:text-white">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={shareToFacebook}
+                      className="hover:bg-blue-600 hover:text-white"
+                    >
                       <Facebook className="w-4 h-4 mr-2" />
                       Facebook
                     </Button>
-                    <Button size="sm" variant="outline" className="hover:bg-blue-400 hover:text-white">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={shareToTwitter}
+                      className="hover:bg-blue-400 hover:text-white"
+                    >
                       <Twitter className="w-4 h-4 mr-2" />
                       Twitter
                     </Button>
-                    <Button size="sm" variant="outline" className="hover:bg-blue-700 hover:text-white">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={shareToLinkedIn}
+                      className="hover:bg-blue-700 hover:text-white"
+                    >
                       <Linkedin className="w-4 h-4 mr-2" />
                       LinkedIn
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={copyLinkToClipboard}
+                      className="hover:bg-green-600 hover:text-white"
+                    >
+                      <Link2 className="w-4 h-4 mr-2" />
+                      Copy Link
                     </Button>
                   </div>
                 </div>
@@ -227,14 +353,10 @@ export default function BlogPostPage() {
             <Card>
               <CardContent className="p-8">
                 <div className="flex gap-6 items-start">
-                  <div className="relative w-20 h-20 rounded-full overflow-hidden flex-shrink-0">
-                    <Image
-                      src={authorAvatar}
-                      alt={authorName}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
+                  <Avatar className="w-20 h-20">
+                    <AvatarImage src={authorAvatar} alt={authorName} />
+                    <AvatarFallback>{authorName.charAt(0)}</AvatarFallback>
+                  </Avatar>
                   <div>
                     <h3 className="text-xl font-bold mb-2">{authorName}</h3>
                     <p className="text-gray-600 dark:text-gray-300">
@@ -248,7 +370,50 @@ export default function BlogPostPage() {
           </div>
         </section>
 
-        {/* Comments Section */}
+        {/* Comments Display */}
+        {comments.length > 0 && (
+          <section className="pb-12 px-4">
+            <div className="max-w-4xl mx-auto">
+              <Card>
+                <CardHeader>
+                  <h3 className="text-2xl font-bold">{comments.length} {comments.length === 1 ? "Comment" : "Comments"}</h3>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {comments.map((comment) => (
+                    <div key={comment.id} className="border-b pb-6 last:border-b-0">
+                      <div className="flex gap-4">
+                        <Avatar className="w-12 h-12">
+                          <AvatarImage src={`https://ui-avatars.com/api/?name=${encodeURIComponent(comment.author_name)}&background=3b82f6&color=fff`} />
+                          <AvatarFallback>{comment.author_name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h4 className="font-semibold">{comment.author_name}</h4>
+                            {comment.status === "approved" && (
+                              <CheckCircle className="w-4 h-4 text-green-600" />
+                            )}
+                            <span className="text-sm text-gray-500">
+                              {new Date(comment.created_at).toLocaleDateString("en-US", {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit"
+                              })}
+                            </span>
+                          </div>
+                          <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{comment.comment_text}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </div>
+          </section>
+        )}
+
+        {/* Comment Form */}
         <section className="pb-12 px-4">
           <div className="max-w-4xl mx-auto">
             <Card>
@@ -258,16 +423,43 @@ export default function BlogPostPage() {
                   Your email address will not be published. Required fields are marked *
                 </p>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid md:grid-cols-2 gap-4">
-                  <Input placeholder="Your Name *" />
-                  <Input type="email" placeholder="Your Email *" />
-                </div>
-                <Input placeholder="Website (Optional)" />
-                <Textarea placeholder="Your Comment *" rows={6} />
-                <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
-                  Post Comment
-                </Button>
+              <CardContent>
+                <form onSubmit={handleCommentSubmit} className="space-y-4">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <Input 
+                      placeholder="Your Name *" 
+                      required
+                      value={commentForm.author_name}
+                      onChange={(e) => setCommentForm({ ...commentForm, author_name: e.target.value })}
+                    />
+                    <Input 
+                      type="email" 
+                      placeholder="Your Email *" 
+                      required
+                      value={commentForm.author_email}
+                      onChange={(e) => setCommentForm({ ...commentForm, author_email: e.target.value })}
+                    />
+                  </div>
+                  <Input 
+                    placeholder="Website (Optional)" 
+                    value={commentForm.author_website}
+                    onChange={(e) => setCommentForm({ ...commentForm, author_website: e.target.value })}
+                  />
+                  <Textarea 
+                    placeholder="Your Comment *" 
+                    rows={6} 
+                    required
+                    value={commentForm.comment_text}
+                    onChange={(e) => setCommentForm({ ...commentForm, comment_text: e.target.value })}
+                  />
+                  <Button 
+                    type="submit"
+                    disabled={submittingComment}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  >
+                    {submittingComment ? "Submitting..." : "Post Comment"}
+                  </Button>
+                </form>
               </CardContent>
             </Card>
           </div>
