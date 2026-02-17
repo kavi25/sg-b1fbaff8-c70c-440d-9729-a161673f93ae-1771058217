@@ -1,9 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import OpenAI from "openai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Initialize Gemini AI
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 export default async function handler(
   req: NextApiRequest,
@@ -15,13 +14,15 @@ export default async function handler(
 
   const { action, prompt, content, category } = req.body;
 
-  if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === "your_openai_api_key_here") {
+  if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === "your_gemini_api_key_here") {
     return res.status(500).json({ 
-      error: "OpenAI API key not configured. Please add your API key to .env.local" 
+      error: "Gemini API key not configured. Please add your API key to .env.local" 
     });
   }
 
   try {
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
     let systemPrompt = "";
     let userPrompt = "";
 
@@ -33,7 +34,7 @@ export default async function handler(
 
       case "generate_title":
         systemPrompt = "You are a creative content strategist. Generate catchy, SEO-friendly blog post titles.";
-        userPrompt = `Generate 5 engaging blog post titles about: ${prompt}\n\nMake them catchy, informative, and optimized for clicks. Return as a JSON array of strings.`;
+        userPrompt = `Generate 5 engaging blog post titles about: ${prompt}\n\nMake them catchy, informative, and optimized for clicks. Return as a JSON array of strings only, no additional text.`;
         break;
 
       case "generate_excerpt":
@@ -53,43 +54,46 @@ export default async function handler(
 
       case "generate_seo":
         systemPrompt = "You are an SEO expert. Generate optimized meta descriptions and keywords.";
-        userPrompt = `Based on this blog post title and content:\n\nTitle: ${prompt}\nContent: ${content}\n\nGenerate:\n1. SEO meta description (150-160 characters)\n2. 5-7 relevant keywords (comma-separated)\n\nReturn as JSON: { "description": "...", "keywords": "..." }`;
+        userPrompt = `Based on this blog post title and content:\n\nTitle: ${prompt}\nContent: ${content}\n\nGenerate:\n1. SEO meta description (150-160 characters)\n2. 5-7 relevant keywords (comma-separated)\n\nReturn as JSON only: { "description": "...", "keywords": "..." }`;
         break;
 
       case "generate_tags":
         systemPrompt = "You are a content categorization expert.";
-        userPrompt = `Based on this blog post content, suggest 5-7 relevant tags:\n\n${content}\n\nReturn as comma-separated tags (e.g., "automation, testing, selenium, QA, software")`;
+        userPrompt = `Based on this blog post content, suggest 5-7 relevant tags:\n\n${content}\n\nReturn as comma-separated tags only (e.g., "automation, testing, selenium, QA, software")`;
         break;
 
       default:
         return res.status(400).json({ error: "Invalid action" });
     }
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt }
-      ],
-      temperature: 0.7,
-      max_tokens: action === "generate_post" ? 2000 : 500,
-    });
+    // Combine system and user prompts for Gemini
+    const fullPrompt = `${systemPrompt}\n\n${userPrompt}`;
 
-    const result = completion.choices[0]?.message?.content || "";
+    const result = await model.generateContent(fullPrompt);
+    const response = await result.response;
+    const generatedText = response.text();
 
     // Parse JSON responses if needed
     if (action === "generate_title" || action === "generate_seo") {
       try {
-        const parsed = JSON.parse(result);
+        // Extract JSON from markdown code blocks if present
+        let jsonText = generatedText.trim();
+        if (jsonText.startsWith("```json")) {
+          jsonText = jsonText.replace(/```json\n?/g, "").replace(/```\n?/g, "");
+        } else if (jsonText.startsWith("```")) {
+          jsonText = jsonText.replace(/```\n?/g, "");
+        }
+        
+        const parsed = JSON.parse(jsonText);
         return res.status(200).json({ result: parsed });
       } catch {
-        return res.status(200).json({ result });
+        return res.status(200).json({ result: generatedText });
       }
     }
 
-    res.status(200).json({ result });
+    res.status(200).json({ result: generatedText });
   } catch (error: any) {
-    console.error("OpenAI API Error:", error);
+    console.error("Gemini API Error:", error);
     res.status(500).json({ 
       error: error.message || "Failed to generate content",
       details: error.response?.data || null

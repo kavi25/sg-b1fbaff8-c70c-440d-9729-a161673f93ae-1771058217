@@ -284,7 +284,7 @@ export default function BlogPostPage() {
               <Card>
                 <CardContent className="p-8 md:p-12">
                   <div 
-                    className="prose prose-lg dark:prose-invert max-w-none"
+                    className="blog-content"
                     dangerouslySetInnerHTML={{ __html: post.content }}
                   />
                 </CardContent>
