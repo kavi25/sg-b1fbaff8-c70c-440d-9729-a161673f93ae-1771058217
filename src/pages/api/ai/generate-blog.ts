@@ -21,7 +21,7 @@ export default async function handler(
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro-latest" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     let systemPrompt = "";
     let userPrompt = "";
