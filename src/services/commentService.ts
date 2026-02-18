@@ -85,3 +85,72 @@ export const commentService = {
     if (error) throw error;
   }
 };
+
+// Get all comments (admin only)
+export const getAllComments = async () => {
+  const { data, error } = await supabase
+    .from("blog_comments")
+    .select(`
+      *,
+      blog_posts (
+        title,
+        slug
+      )
+    `)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching all comments:", error);
+    throw error;
+  }
+
+  return data || [];
+};
+
+// Get comments by status
+export const getCommentsByStatus = async (status: "pending" | "approved" | "spam") => {
+  const { data, error } = await supabase
+    .from("blog_comments")
+    .select(`
+      *,
+      blog_posts (
+        title,
+        slug
+      )
+    `)
+    .eq("status", status)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching comments by status:", error);
+    throw error;
+  }
+
+  return data || [];
+};
+
+// Approve or change status of a comment
+export const approveComment = async (commentId: string, newStatus: "approved" | "spam" = "approved") => {
+  const { error } = await supabase
+    .from("blog_comments")
+    .update({ status: newStatus })
+    .eq("id", commentId);
+
+  if (error) {
+    console.error("Error updating comment status:", error);
+    throw error;
+  }
+};
+
+// Delete a comment
+export const deleteComment = async (commentId: string) => {
+  const { error } = await supabase
+    .from("blog_comments")
+    .delete()
+    .eq("id", commentId);
+
+  if (error) {
+    console.error("Error deleting comment:", error);
+    throw error;
+  }
+};
