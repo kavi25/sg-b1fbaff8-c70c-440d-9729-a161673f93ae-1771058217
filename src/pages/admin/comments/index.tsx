@@ -356,7 +356,7 @@ export default function AdminComments() {
                             {/* Comment Content */}
                             <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
                               <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                                {comment.content}
+                                {comment.comment_text}
                               </p>
                             </div>
 

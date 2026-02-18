@@ -179,3 +179,22 @@ export const authService = {
     return supabase.auth.onAuthStateChange(callback);
   }
 };
+
+// Check if current user is admin
+export const checkAdminAuth = async (): Promise<boolean> => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("is_admin")
+      .eq("id", user.id)
+      .single();
+
+    return profile?.is_admin || false;
+  } catch (error) {
+    console.error("Error checking admin status:", error);
+    return false;
+  }
+};
