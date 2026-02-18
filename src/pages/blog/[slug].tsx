@@ -17,6 +17,7 @@ import { Calendar, User, MessageCircle, Share2, Facebook, Twitter, Linkedin, Arr
 import { blogPosts } from "@/data/blogPosts";
 import { blogService } from "@/services/blogService";
 import { commentService } from "@/services/commentService";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CommentFormData {
   author_name: string;
@@ -87,13 +88,25 @@ export default function BlogPostPage() {
 
     setSubmittingComment(true);
     try {
-      await commentService.createComment({
-        post_id: post.id,
-        author_name: commentForm.author_name.trim(),
-        author_email: commentForm.author_email.trim(),
-        author_website: commentForm.author_website.trim(),
-        comment_text: commentForm.comment_text.trim()
-      });
+      const { data, error } = await supabase
+        .from("blog_comments")
+        .insert({
+          post_id: post.id,
+          author_name: commentForm.author_name.trim(),
+          author_email: commentForm.author_email.trim(),
+          author_website: commentForm.author_website.trim() || null,
+          comment_text: commentForm.comment_text.trim(),
+          status: "pending"
+        })
+        .select()
+        .single();
+
+      console.log("Comment submission:", { data, error });
+
+      if (error) {
+        console.error("Supabase error:", error);
+        throw error;
+      }
 
       toast({
         title: "Comment Submitted!",
@@ -106,11 +119,14 @@ export default function BlogPostPage() {
         author_website: "",
         comment_text: ""
       });
-    } catch (error) {
+
+      // Reload comments to show pending count
+      loadComments(post.id);
+    } catch (error: any) {
       console.error("Error submitting comment:", error);
       toast({
         title: "Error",
-        description: "Failed to submit comment. Please try again.",
+        description: error?.message || "Failed to submit comment. Please try again.",
         variant: "destructive"
       });
     } finally {
