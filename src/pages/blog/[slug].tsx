@@ -95,8 +95,7 @@ export default function BlogPostPage() {
           author_name: commentForm.author_name.trim(),
           author_email: commentForm.author_email.trim(),
           author_website: commentForm.author_website.trim() || null,
-          comment_text: commentForm.comment_text.trim(),
-          status: "pending"
+          comment_text: commentForm.comment_text.trim()
         })
         .select()
         .single();
