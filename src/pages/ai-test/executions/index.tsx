@@ -51,10 +51,16 @@ interface ExecutionResult {
   id: string;
   execution_id: string;
   test_case_id: string;
-  result: string;
+  test_name: string;
+  status: string;
   execution_time: number;
-  error_details: string | null;
-  screenshot_path: string | null;
+  error_message: string | null;
+  stack_trace: string | null;
+  logs: string | null;
+  screenshots: any;
+  ai_analysis: any;
+  suggested_fixes: string | null;
+  created_at: string;
   ai_test_cases?: {
     title: string;
     priority: string;
@@ -489,16 +495,16 @@ export default function ExecutionsPage() {
                                         }>
                                           {result.ai_test_cases?.priority || "medium"}
                                         </Badge>
-                                        <Badge className={getStatusColor(result.result)}>
-                                          {getStatusIcon(result.result)}
-                                          <span className="ml-1">{result.result}</span>
+                                        <Badge className={getStatusColor(result.status)}>
+                                          {getStatusIcon(result.status)}
+                                          <span className="ml-1">{result.status}</span>
                                         </Badge>
                                       </div>
-                                      {result.error_details && (
+                                      {result.error_message && (
                                         <div className="mt-2 p-3 bg-red-50 dark:bg-red-900/20 rounded border border-red-200 dark:border-red-800">
                                           <div className="flex items-start gap-2">
                                             <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
-                                            <p className="text-sm text-red-800 dark:text-red-300">{result.error_details}</p>
+                                            <p className="text-sm text-red-800 dark:text-red-300">{result.error_message}</p>
                                           </div>
                                         </div>
                                       )}
