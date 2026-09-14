@@ -28,7 +28,6 @@ interface Project {
   name: string;
   description: string | null;
   application_type: string;
-  application_url: string | null;
   status: string;
   created_at: string;
 }
