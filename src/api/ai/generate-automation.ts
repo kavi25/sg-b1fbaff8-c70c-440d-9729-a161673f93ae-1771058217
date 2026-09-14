@@ -284,7 +284,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       // Save script to database
       const { data: script, error: scriptError } = await supabase
-        .from("ai_test_automation_scripts")
+        .from("ai_test_scripts")
         .insert({
           project_id: projectId,
           test_case_id: testCase.id,
