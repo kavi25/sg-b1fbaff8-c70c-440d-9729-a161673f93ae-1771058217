@@ -122,7 +122,7 @@ export default function ExecutionsPage() {
   const loadExecutionResults = async (executionId: string) => {
     try {
       const { data, error } = await supabase
-        .from("ai_test_execution_results")
+        .from("ai_test_results")
         .select(`
           *,
           ai_test_cases(title, priority)
