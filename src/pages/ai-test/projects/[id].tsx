@@ -138,7 +138,7 @@ export default function ProjectDetailPage() {
       if (!projectId) return;
 
       const { data: scriptsData } = await supabase
-        .from("ai_test_automation_scripts")
+        .from("ai_test_scripts")
         .select("*")
         .eq("project_id", projectId)
         .order("created_at", { ascending: false });
