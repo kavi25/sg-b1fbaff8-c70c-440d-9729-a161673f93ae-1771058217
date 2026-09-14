@@ -178,17 +178,52 @@ export default function ProjectDetailPage() {
 
       toast({
         title: "Analysis Started!",
-        description: "AI is analyzing your application. This may take a few minutes."
+        description: "AI is analyzing your application. This will take about 5-10 seconds."
       });
 
-      // Reload project
+      // Reload project to show analyzing state
+      await loadProject();
+
+      // Start the analysis process (backend will complete it)
+      const response = await fetch("/api/ai/complete-analysis", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          projectId: projectId
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to complete analysis");
+      }
+
+      toast({
+        title: "Analysis Complete!",
+        description: "Your application has been analyzed. You can now generate test cases."
+      });
+
+      // Reload project to show active state
       await loadProject();
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "Failed to start analysis",
+        description: error.message || "Failed to analyze application",
         variant: "destructive"
       });
+      
+      // Revert status back to setup on error
+      const projectId = Array.isArray(id) ? id[0] : id;
+      if (projectId) {
+        await supabase
+          .from("ai_test_projects")
+          .update({ status: "setup" })
+          .eq("id", projectId);
+        await loadProject();
+      }
     } finally {
       setUploadingApp(false);
     }
