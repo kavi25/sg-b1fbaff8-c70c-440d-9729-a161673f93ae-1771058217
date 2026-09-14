@@ -6,6 +6,58 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
+const services = [
+    {
+      title: "Web Development",
+      description: "Custom websites and web applications built with modern technologies",
+      icon: "🌐",
+      href: "/services/web-development",
+      gradient: "from-blue-500 to-cyan-500"
+    },
+    {
+      title: "App Development",
+      description: "Native and cross-platform mobile applications for iOS and Android",
+      icon: "📱",
+      href: "/services/app-development",
+      gradient: "from-purple-500 to-pink-500"
+    },
+    {
+      title: "AI Development",
+      description: "Intelligent solutions powered by machine learning and artificial intelligence",
+      icon: "🤖",
+      href: "/services/ai-development",
+      gradient: "from-green-500 to-teal-500"
+    },
+    {
+      title: "AI Testing",
+      description: "AI-powered automated testing platform for web, mobile, and API applications",
+      icon: "🧪",
+      href: "/services/ai-testing",
+      gradient: "from-indigo-500 to-purple-500"
+    },
+    {
+      title: "SEO Services",
+      description: "Search engine optimization to improve your online visibility",
+      icon: "🔍",
+      href: "/services/seo",
+      gradient: "from-orange-500 to-red-500"
+    },
+    {
+      title: "Software Testing",
+      description: "Comprehensive quality assurance and testing services",
+      icon: "✅",
+      href: "/services/testing",
+      gradient: "from-yellow-500 to-orange-500"
+    },
+    {
+      title: "3D Interior Design",
+      description: "Professional 3D visualization and interior design services",
+      icon: "🏠",
+      href: "/services/interior-design",
+      gradient: "from-pink-500 to-rose-500"
+    }
+  ];
+
 export default function ServicesPage() {
   return (
     <>
