@@ -30,6 +30,7 @@ import {
   FileBarChart
 } from "lucide-react";
 import Link from "next/link";
+import { Select } from "@/components/ui/select";
 
 interface Project {
   id: string;
@@ -53,11 +54,15 @@ export default function ProjectDetailPage() {
   const [generatingTests, setGeneratingTests] = useState(false);
   const [scenarios, setScenarios] = useState<any[]>([]);
   const [testCases, setTestCases] = useState<any[]>([]);
+  const [selectedFramework, setSelectedFramework] = useState("selenium-java");
+  const [generatingScripts, setGeneratingScripts] = useState(false);
+  const [automationScripts, setAutomationScripts] = useState<any[]>([]);
 
   useEffect(() => {
     if (id) {
       loadProject();
       loadTestData();
+      loadAutomationScripts();
     }
   }, [id]);
 
@@ -124,6 +129,25 @@ export default function ProjectDetailPage() {
       }
     } catch (error) {
       console.error("Error loading test data:", error);
+    }
+  };
+
+  const loadAutomationScripts = async () => {
+    try {
+      const projectId = Array.isArray(id) ? id[0] : id;
+      if (!projectId) return;
+
+      const { data: scriptsData } = await supabase
+        .from("ai_test_automation_scripts")
+        .select("*")
+        .eq("project_id", projectId)
+        .order("created_at", { ascending: false });
+
+      if (scriptsData) {
+        setAutomationScripts(scriptsData);
+      }
+    } catch (error) {
+      console.error("Error loading automation scripts:", error);
     }
   };
 
@@ -215,6 +239,60 @@ export default function ProjectDetailPage() {
     } finally {
       setGeneratingTests(false);
     }
+  };
+
+  const handleGenerateAutomation = async () => {
+    if (!project) return;
+
+    setGeneratingScripts(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const response = await fetch("/api/ai/generate-automation", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          projectId: project.id,
+          userId: user.id,
+          framework: selectedFramework
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to generate automation scripts");
+      }
+
+      toast({
+        title: "Automation Scripts Generated!",
+        description: `Created ${result.scriptsGenerated} ${result.framework} scripts.`
+      });
+
+      // Reload automation scripts
+      await loadAutomationScripts();
+    } catch (error: any) {
+      console.error("Error generating automation:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to generate automation scripts",
+        variant: "destructive"
+      });
+    } finally {
+      setGeneratingScripts(false);
+    }
+  };
+
+  const handleCopyScript = (scriptContent: string) => {
+    navigator.clipboard.writeText(scriptContent);
+    toast({
+      title: "Copied!",
+      description: "Script copied to clipboard"
+    });
   };
 
   if (loading) {
@@ -700,18 +778,163 @@ export default function ProjectDetailPage() {
               )}
             </TabsContent>
 
-            <TabsContent value="automation">
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-center py-12">
-                    <Settings className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="font-semibold mb-2">Automation Scripts</h3>
-                    <p className="text-gray-600 dark:text-gray-400">
-                      Generate and manage automation scripts
+            <TabsContent value="automation" className="space-y-6">
+              {testCases.length === 0 ? (
+                <Card>
+                  <CardContent className="text-center py-12">
+                    <Code2 className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                    <h3 className="text-xl font-semibold mb-2">No Test Cases Yet</h3>
+                    <p className="text-gray-600 dark:text-gray-400 mb-6">
+                      Generate test cases first before creating automation scripts
                     </p>
+                    <Button
+                      onClick={() => setActiveTab("overview")}
+                      variant="outline">
+                      Go to Overview
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : automationScripts.length === 0 ? (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Sparkles className="w-5 h-5 text-purple-600" />
+                      Generate Automation Scripts
+                    </CardTitle>
+                    <CardDescription>
+                      Convert your AI-generated test cases into executable automation scripts
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div>
+                      <Label htmlFor="framework" className="text-base font-semibold mb-3 block">
+                        Select Automation Framework
+                      </Label>
+                      <div className="grid md:grid-cols-2 gap-4">
+                        {[
+                          { value: "selenium-java", label: "Selenium WebDriver (Java)", icon: "☕", desc: "Popular Java-based web testing" },
+                          { value: "cypress", label: "Cypress (JavaScript)", icon: "🌲", desc: "Modern JavaScript E2E testing" },
+                          { value: "playwright", label: "Playwright (TypeScript)", icon: "🎭", desc: "Fast and reliable cross-browser testing" },
+                          { value: "appium-java", label: "Appium (Java)", icon: "📱", desc: "Mobile app automation for iOS/Android" },
+                          { value: "rest-assured", label: "REST Assured (Java)", icon: "🔌", desc: "API testing framework" }
+                        ].map((framework) => (
+                          <div
+                            key={framework.value}
+                            onClick={() => setSelectedFramework(framework.value)}
+                            className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                              selectedFramework === framework.value
+                                ? "border-purple-600 bg-purple-50 dark:bg-purple-900/20"
+                                : "border-gray-200 dark:border-gray-700 hover:border-purple-300"
+                            }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <span className="text-2xl">{framework.icon}</span>
+                              <div className="flex-1">
+                                <h4 className="font-semibold">{framework.label}</h4>
+                                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                  {framework.desc}
+                                </p>
+                              </div>
+                              {selectedFramework === framework.value && (
+                                <CheckCircle2 className="w-5 h-5 text-purple-600" />
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <Button
+                      onClick={handleGenerateAutomation}
+                      disabled={generatingScripts}
+                      className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                      size="lg">
+                      {generatingScripts ? (
+                        <>
+                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                          Generating Scripts...
+                        </>
+                      ) : (
+                        <>
+                          <Code2 className="mr-2 h-5 w-5" />
+                          Generate Automation Scripts
+                        </>
+                      )}
+                    </Button>
+
+                    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+                      <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-blue-600" />
+                        What You'll Get
+                      </h4>
+                      <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                        <li>• Complete test automation scripts for all {testCases.length} test cases</li>
+                        <li>• Production-ready code with proper setup and teardown</li>
+                        <li>• Detailed comments explaining each test step</li>
+                        <li>• Ready to integrate into your CI/CD pipeline</li>
+                      </ul>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-2xl font-bold">Automation Scripts</h2>
+                      <p className="text-gray-600 dark:text-gray-400">
+                        {automationScripts.length} scripts generated using {automationScripts[0]?.framework}
+                      </p>
+                    </div>
+                    <Button
+                      onClick={handleGenerateAutomation}
+                      variant="outline"
+                      disabled={generatingScripts}>
+                      {generatingScripts ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Regenerating...
+                        </>
+                      ) : (
+                        <>
+                          <Code2 className="mr-2 h-4 w-4" />
+                          Regenerate Scripts
+                        </>
+                      )}
+                    </Button>
                   </div>
-                </CardContent>
-              </Card>
+
+                  <div className="grid gap-4">
+                    {automationScripts.map((script) => (
+                      <Card key={script.id} className="hover:shadow-md transition-shadow">
+                        <CardHeader>
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <CardTitle className="text-lg">{script.file_name}</CardTitle>
+                              <div className="flex items-center gap-2 mt-2">
+                                <Badge variant="outline">{script.language}</Badge>
+                                <Badge variant="secondary">{script.framework}</Badge>
+                              </div>
+                            </div>
+                            <Button
+                              onClick={() => handleCopyScript(script.script_content)}
+                              size="sm"
+                              variant="outline">
+                              Copy Code
+                            </Button>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                            <pre className="text-sm text-gray-100 font-mono">
+                              <code>{script.script_content}</code>
+                            </pre>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="executions">
