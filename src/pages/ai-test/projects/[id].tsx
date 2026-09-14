@@ -60,10 +60,14 @@ export default function ProjectDetailPage() {
         return;
       }
 
+      // Ensure id is a string
+      const projectId = Array.isArray(id) ? id[0] : id;
+      if (!projectId) return;
+
       const { data, error } = await supabase
         .from("ai_test_projects")
         .select("*")
-        .eq("id", id)
+        .eq("id", projectId)
         .eq("user_id", user.id)
         .single();
 
@@ -95,11 +99,15 @@ export default function ProjectDetailPage() {
     setUploadingApp(true);
 
     try {
+      // Ensure id is a string
+      const projectId = Array.isArray(id) ? id[0] : id;
+      if (!projectId) return;
+
       // Update project status to analyzing
       const { error } = await supabase
         .from("ai_test_projects")
         .update({ status: "analyzing" })
-        .eq("id", id);
+        .eq("id", projectId);
 
       if (error) throw error;
 
