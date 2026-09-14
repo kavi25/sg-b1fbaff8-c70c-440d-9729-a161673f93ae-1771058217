@@ -390,13 +390,13 @@ export default function ProjectDetailPage() {
           </motion.div>
 
           {/* Main Content */}
-          <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="tests" disabled={project.status === "setup"}>Test Cases</TabsTrigger>
-              <TabsTrigger value="automation" disabled={project.status === "setup"}>Automation</TabsTrigger>
-              <TabsTrigger value="executions" disabled={project.status === "setup"}>Executions</TabsTrigger>
-              <TabsTrigger value="reports" disabled={project.status === "setup"}>Reports</TabsTrigger>
+              <TabsTrigger value="tests">Test Cases</TabsTrigger>
+              <TabsTrigger value="automation">Automation</TabsTrigger>
+              <TabsTrigger value="executions">Executions</TabsTrigger>
+              <TabsTrigger value="reports">Reports</TabsTrigger>
             </TabsList>
 
             {/* Overview Tab */}
@@ -937,21 +937,37 @@ export default function ProjectDetailPage() {
               )}
             </TabsContent>
 
-            <TabsContent value="executions">
+            {/* Executions Tab */}
+            <TabsContent value="executions" className="space-y-6">
               <Card>
-                <CardContent className="pt-6">
-                  <div className="text-center py-12">
-                    <PlayCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="font-semibold mb-2">Test Executions</h3>
-                    <p className="text-gray-600 dark:text-gray-400">
-                      View test execution history and results
-                    </p>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle>Test Executions</CardTitle>
+                      <CardDescription>View test execution history for this project</CardDescription>
+                    </div>
+                    <Link href="/ai-test/executions">
+                      <Button variant="outline">
+                        View All Executions
+                      </Button>
+                    </Link>
                   </div>
+                </CardHeader>
+                <CardContent className="text-center py-12">
+                  <Play className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                  <h3 className="text-xl font-semibold mb-2">No Executions Yet</h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-6">
+                    Run your automation scripts to see execution results here
+                  </p>
+                  <Button onClick={() => setActiveTab("automation")} variant="outline">
+                    Go to Automation
+                  </Button>
                 </CardContent>
               </Card>
             </TabsContent>
 
-            <TabsContent value="reports">
+            {/* Reports Tab */}
+            <TabsContent value="reports" className="space-y-6">
               <Card>
                 <CardContent className="pt-6">
                   <div className="text-center py-12">
