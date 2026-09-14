@@ -22,7 +22,12 @@ import {
   Brain,
   CheckCircle2,
   Clock,
-  AlertCircle
+  AlertCircle,
+  Loader2,
+  FileText,
+  Code2,
+  Play,
+  FileBarChart
 } from "lucide-react";
 import Link from "next/link";
 
@@ -44,10 +49,15 @@ export default function ProjectDetailPage() {
   const [project, setProject] = useState<Project | null>(null);
   const [applicationUrl, setApplicationUrl] = useState("");
   const [uploadingApp, setUploadingApp] = useState(false);
+  const [activeTab, setActiveTab] = useState("overview");
+  const [generatingTests, setGeneratingTests] = useState(false);
+  const [scenarios, setScenarios] = useState<any[]>([]);
+  const [testCases, setTestCases] = useState<any[]>([]);
 
   useEffect(() => {
     if (id) {
       loadProject();
+      loadTestData();
     }
   }, [id]);
 
@@ -83,6 +93,37 @@ export default function ProjectDetailPage() {
       router.push("/ai-test/dashboard");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadTestData = async () => {
+    try {
+      const projectId = Array.isArray(id) ? id[0] : id;
+      if (!projectId) return;
+
+      // Load scenarios
+      const { data: scenariosData } = await supabase
+        .from("ai_test_scenarios")
+        .select("*")
+        .eq("project_id", projectId)
+        .order("created_at", { ascending: false });
+
+      if (scenariosData) {
+        setScenarios(scenariosData);
+      }
+
+      // Load test cases
+      const { data: testCasesData } = await supabase
+        .from("ai_test_cases")
+        .select("*")
+        .eq("project_id", projectId)
+        .order("created_at", { ascending: false });
+
+      if (testCasesData) {
+        setTestCases(testCasesData);
+      }
+    } catch (error) {
+      console.error("Error loading test data:", error);
     }
   };
 
@@ -126,6 +167,53 @@ export default function ProjectDetailPage() {
       });
     } finally {
       setUploadingApp(false);
+    }
+  };
+
+  const handleGenerateTests = async () => {
+    if (!project) return;
+
+    setGeneratingTests(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const response = await fetch("/api/ai/generate-tests", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          projectId: project.id,
+          userId: user.id
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to generate tests");
+      }
+
+      toast({
+        title: "Tests Generated Successfully!",
+        description: `Created ${result.scenariosCreated} scenarios and ${result.testCasesCreated} test cases.`
+      });
+
+      // Reload project and test data
+      await loadProject();
+      await loadTestData();
+      setActiveTab("tests");
+    } catch (error: any) {
+      console.error("Error generating tests:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to generate tests",
+        variant: "destructive"
+      });
+    } finally {
+      setGeneratingTests(false);
     }
   };
 
@@ -406,21 +494,210 @@ export default function ProjectDetailPage() {
                   </Card>
                 </div>
               )}
+
+              {/* AI Test Generation */}
+              {project.status === "active" && scenarios.length === 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Sparkles className="w-5 h-5 text-purple-600" />
+                      AI Test Generation
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <p className="text-gray-600 dark:text-gray-400">
+                      Your application analysis is complete! Now let AI generate comprehensive test scenarios and test cases.
+                    </p>
+                    <Button
+                      onClick={handleGenerateTests}
+                      disabled={generatingTests}
+                      className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
+                      {generatingTests ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Generating Tests...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="mr-2 h-4 w-4" />
+                          Generate Test Cases
+                        </>
+                      )}
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Test Summary */}
+              {scenarios.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-green-600" />
+                      Test Generation Complete
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 text-center">
+                        <div className="text-3xl font-bold text-purple-600">{scenarios.length}</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-400">Test Scenarios</div>
+                      </div>
+                      <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 text-center">
+                        <div className="text-3xl font-bold text-blue-600">{testCases.length}</div>
+                        <div className="text-sm text-gray-600 dark:text-gray-400">Test Cases</div>
+                      </div>
+                    </div>
+                    <Button
+                      onClick={() => setActiveTab("tests")}
+                      variant="outline"
+                      className="w-full">
+                      View All Tests
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
             </TabsContent>
 
-            {/* Other tabs - Coming soon */}
-            <TabsContent value="tests">
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-center py-12">
-                    <FileCode className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="font-semibold mb-2">Test Cases</h3>
-                    <p className="text-gray-600 dark:text-gray-400">
-                      View and manage AI-generated test cases
+            {/* Test Cases Tab */}
+            <TabsContent value="tests" className="space-y-6">
+              {scenarios.length === 0 ? (
+                <Card>
+                  <CardContent className="text-center py-12">
+                    <FileText className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                    <h3 className="text-xl font-semibold mb-2">No Test Cases Yet</h3>
+                    <p className="text-gray-600 dark:text-gray-400 mb-6">
+                      Generate AI-powered test cases to get started
                     </p>
+                    <Button
+                      onClick={() => setActiveTab("overview")}
+                      variant="outline">
+                      Go to Overview
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <>
+                  {/* Test Scenarios */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-2xl font-bold">Test Scenarios</h2>
+                      <Badge variant="secondary">{scenarios.length} Scenarios</Badge>
+                    </div>
+
+                    <div className="grid gap-4">
+                      {scenarios.map((scenario) => (
+                        <Card key={scenario.id} className="hover:shadow-md transition-shadow">
+                          <CardHeader>
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <CardTitle className="text-lg">{scenario.title}</CardTitle>
+                                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                                  {scenario.description}
+                                </p>
+                              </div>
+                              <div className="flex flex-col gap-2 ml-4">
+                                <Badge
+                                  variant={
+                                    scenario.priority === "critical" ? "destructive" :
+                                    scenario.priority === "high" ? "default" :
+                                    "secondary"
+                                  }>
+                                  {scenario.priority}
+                                </Badge>
+                                <Badge variant="outline">
+                                  {scenario.test_type}
+                                </Badge>
+                              </div>
+                            </div>
+                          </CardHeader>
+                        </Card>
+                      ))}
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
+
+                  {/* Test Cases */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-2xl font-bold">Test Cases</h2>
+                      <Badge variant="secondary">{testCases.length} Test Cases</Badge>
+                    </div>
+
+                    <div className="grid gap-4">
+                      {testCases.map((testCase) => (
+                        <Card key={testCase.id} className="hover:shadow-md transition-shadow">
+                          <CardHeader>
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <CardTitle className="text-lg">{testCase.title}</CardTitle>
+                                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                                  {testCase.description}
+                                </p>
+                              </div>
+                              <div className="flex flex-col gap-2 ml-4">
+                                <Badge
+                                  variant={
+                                    testCase.priority === "critical" ? "destructive" :
+                                    testCase.priority === "high" ? "default" :
+                                    "secondary"
+                                  }>
+                                  {testCase.priority}
+                                </Badge>
+                                <Badge variant="outline">
+                                  {testCase.status}
+                                </Badge>
+                              </div>
+                            </div>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                            {/* Preconditions */}
+                            {testCase.preconditions && testCase.preconditions.length > 0 && (
+                              <div>
+                                <h4 className="font-semibold text-sm mb-2">Preconditions:</h4>
+                                <ul className="list-disc list-inside space-y-1">
+                                  {testCase.preconditions.map((pre: string, idx: number) => (
+                                    <li key={idx} className="text-sm text-gray-600 dark:text-gray-400">
+                                      {pre}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+
+                            {/* Test Steps */}
+                            {testCase.test_steps && testCase.test_steps.length > 0 && (
+                              <div>
+                                <h4 className="font-semibold text-sm mb-2">Test Steps:</h4>
+                                <ol className="list-decimal list-inside space-y-1">
+                                  {testCase.test_steps.map((step: string, idx: number) => (
+                                    <li key={idx} className="text-sm text-gray-600 dark:text-gray-400">
+                                      {step}
+                                    </li>
+                                  ))}
+                                </ol>
+                              </div>
+                            )}
+
+                            {/* Expected Results */}
+                            {testCase.expected_results && testCase.expected_results.length > 0 && (
+                              <div>
+                                <h4 className="font-semibold text-sm mb-2">Expected Results:</h4>
+                                <ul className="list-disc list-inside space-y-1">
+                                  {testCase.expected_results.map((result: string, idx: number) => (
+                                    <li key={idx} className="text-sm text-gray-600 dark:text-gray-400">
+                                      {result}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
             </TabsContent>
 
             <TabsContent value="automation">
