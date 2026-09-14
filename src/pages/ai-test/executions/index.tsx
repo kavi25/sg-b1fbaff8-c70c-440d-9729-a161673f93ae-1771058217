@@ -28,15 +28,18 @@ import {
 interface Execution {
   id: string;
   project_id: string;
+  execution_name: string;
+  execution_type: string;
   status: string;
+  browser: string;
+  environment: string;
   total_tests: number;
   passed_tests: number;
   failed_tests: number;
   skipped_tests: number;
-  start_time: string;
-  end_time: string | null;
-  duration_seconds: number | null;
-  execution_environment: string;
+  execution_duration: number | null;
+  started_at: string | null;
+  completed_at: string | null;
   created_at: string;
   ai_test_projects?: {
     name: string;
@@ -48,10 +51,10 @@ interface ExecutionResult {
   id: string;
   execution_id: string;
   test_case_id: string;
-  status: string;
-  execution_time_ms: number;
-  error_message: string | null;
-  screenshot_url: string | null;
+  result: string;
+  execution_time: number;
+  error_details: string | null;
+  screenshot_path: string | null;
   ai_test_cases?: {
     title: string;
     priority: string;
@@ -188,9 +191,9 @@ export default function ExecutionsPage() {
   };
 
   const getAverageDuration = () => {
-    const completed = executions.filter(e => e.duration_seconds !== null);
+    const completed = executions.filter(e => e.execution_duration !== null);
     if (completed.length === 0) return 0;
-    const total = completed.reduce((sum, e) => sum + (e.duration_seconds || 0), 0);
+    const total = completed.reduce((sum, e) => sum + (e.execution_duration || 0), 0);
     return Math.round(total / completed.length);
   };
 
@@ -377,9 +380,9 @@ export default function ExecutionsPage() {
                                 </span>
                                 <span className="flex items-center gap-1">
                                   <Clock className="w-4 h-4" />
-                                  {execution.duration_seconds ? `${execution.duration_seconds}s` : "In progress"}
+                                  {execution.execution_duration ? `${execution.execution_duration}s` : "In progress"}
                                 </span>
-                                <span>Environment: {execution.execution_environment}</span>
+                                <span>Environment: {execution.environment}</span>
                               </div>
                             </div>
                             <div className="flex items-center gap-8 ml-6">
@@ -459,7 +462,7 @@ export default function ExecutionsPage() {
                         </div>
                         <div>
                           <p className="text-sm text-gray-600 dark:text-gray-400">Duration</p>
-                          <p className="text-2xl font-bold">{selectedExecution.duration_seconds || 0}s</p>
+                          <p className="text-2xl font-bold">{selectedExecution.execution_duration || 0}s</p>
                         </div>
                       </div>
 
@@ -486,23 +489,23 @@ export default function ExecutionsPage() {
                                         }>
                                           {result.ai_test_cases?.priority || "medium"}
                                         </Badge>
-                                        <Badge className={getStatusColor(result.status)}>
-                                          {getStatusIcon(result.status)}
-                                          <span className="ml-1">{result.status}</span>
+                                        <Badge className={getStatusColor(result.result)}>
+                                          {getStatusIcon(result.result)}
+                                          <span className="ml-1">{result.result}</span>
                                         </Badge>
                                       </div>
-                                      {result.error_message && (
+                                      {result.error_details && (
                                         <div className="mt-2 p-3 bg-red-50 dark:bg-red-900/20 rounded border border-red-200 dark:border-red-800">
                                           <div className="flex items-start gap-2">
                                             <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
-                                            <p className="text-sm text-red-800 dark:text-red-300">{result.error_message}</p>
+                                            <p className="text-sm text-red-800 dark:text-red-300">{result.error_details}</p>
                                           </div>
                                         </div>
                                       )}
                                     </div>
                                     <div className="text-right ml-6">
                                       <p className="text-sm text-gray-600 dark:text-gray-400">Execution Time</p>
-                                      <p className="text-lg font-semibold">{result.execution_time_ms}ms</p>
+                                      <p className="text-lg font-semibold">{result.execution_time}ms</p>
                                     </div>
                                   </div>
                                 </CardContent>
