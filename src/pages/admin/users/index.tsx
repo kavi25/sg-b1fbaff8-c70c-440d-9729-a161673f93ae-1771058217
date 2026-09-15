@@ -601,7 +601,10 @@ export default function AdminUsersPage() {
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  onClick={() => handleEditUser(user)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEditUser(user);
+                                  }}
                                   className="w-full"
                                 >
                                   <Edit className="w-3 h-3 mr-1" />
@@ -610,7 +613,10 @@ export default function AdminUsersPage() {
                                 <Button
                                   size="sm"
                                   variant="destructive"
-                                  onClick={() => handleDeleteUser(user)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteUser(user);
+                                  }}
                                   className="w-full"
                                 >
                                   <Trash className="w-3 h-3 mr-1" />
