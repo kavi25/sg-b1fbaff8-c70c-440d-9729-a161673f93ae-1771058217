@@ -13,7 +13,9 @@ import {
   TrendingUp,
   DollarSign,
   MessageSquare,
-  Package
+  Package,
+  BarChart3,
+  Settings
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -220,7 +222,26 @@ export default function AdminDashboard() {
           </div>
 
           {/* Quick Actions */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <Link href="/admin/users">
+              <Card className="hover:shadow-lg transition-all cursor-pointer border-2 hover:border-purple-300">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="w-5 h-5 text-purple-600" />
+                    User Management
+                  </CardTitle>
+                  <CardDescription>
+                    View and manage registered users
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Access user accounts, statistics, and activity
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
+
             <Link href="/admin/blog">
               <Card className="cursor-pointer hover:shadow-lg transition-shadow">
                 <CardHeader>
@@ -247,16 +268,6 @@ export default function AdminDashboard() {
                   <ShoppingCart className="h-8 w-8 text-purple-600 mb-2" />
                   <CardTitle>Orders</CardTitle>
                   <CardDescription>Manage orders and payments</CardDescription>
-                </CardHeader>
-              </Card>
-            </Link>
-
-            <Link href="/admin/users">
-              <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <Users className="h-8 w-8 text-orange-600 mb-2" />
-                  <CardTitle>Users</CardTitle>
-                  <CardDescription>Manage user accounts</CardDescription>
                 </CardHeader>
               </Card>
             </Link>
