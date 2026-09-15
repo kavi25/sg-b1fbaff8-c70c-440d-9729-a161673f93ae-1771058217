@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -26,7 +27,9 @@ import {
   User,
   Edit,
   Trash,
-  Upload
+  Upload,
+  Phone,
+  MapPin
 } from "lucide-react";
 import Link from "next/link";
 import type React from "react";
@@ -36,6 +39,8 @@ interface UserProfile {
   email: string | null;
   full_name: string | null;
   avatar_url: string | null;
+  phone: string | null;
+  address: string | null;
   role: string;
   created_at: string;
   updated_at: string;
@@ -58,6 +63,8 @@ export default function AdminUsersPage() {
   const [editForm, setEditForm] = useState({
     full_name: "",
     email: "",
+    phone: "",
+    address: "",
     role: "user",
     avatar_url: ""
   });
@@ -195,6 +202,8 @@ export default function AdminUsersPage() {
     setEditForm({
       full_name: user.full_name || "",
       email: user.email || "",
+      phone: user.phone || "",
+      address: user.address || "",
       role: user.role,
       avatar_url: user.avatar_url || ""
     });
@@ -217,6 +226,8 @@ export default function AdminUsersPage() {
         .update({
           full_name: editForm.full_name,
           email: editForm.email,
+          phone: editForm.phone,
+          address: editForm.address,
           role: editForm.role,
           avatar_url: editForm.avatar_url,
           updated_at: new Date().toISOString()
@@ -533,11 +544,24 @@ export default function AdminUsersPage() {
                                       <Mail className="w-4 h-4" />
                                       {user.email || "No email"}
                                     </span>
+                                    {user.phone && (
+                                      <span className="flex items-center gap-1">
+                                        <Phone className="w-4 h-4" />
+                                        {user.phone}
+                                      </span>
+                                    )}
                                     <span className="flex items-center gap-1">
                                       <Calendar className="w-4 h-4" />
                                       Joined {formatDate(user.created_at)}
                                     </span>
                                   </div>
+
+                                  {user.address && (
+                                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-3">
+                                      <MapPin className="w-4 h-4" />
+                                      <span>{user.address}</span>
+                                    </div>
+                                  )}
 
                                   {/* User Statistics */}
                                   <div className="grid grid-cols-3 gap-4 mt-4">
@@ -665,6 +689,30 @@ export default function AdminUsersPage() {
                   value={editForm.email}
                   onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
                   placeholder="Enter email address"
+                />
+              </div>
+
+              {/* Phone */}
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone Number</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={editForm.phone}
+                  onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                  placeholder="Enter phone number"
+                />
+              </div>
+
+              {/* Address */}
+              <div className="space-y-2">
+                <Label htmlFor="address">Address</Label>
+                <Textarea
+                  id="address"
+                  value={editForm.address}
+                  onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+                  placeholder="Enter full address"
+                  rows={3}
                 />
               </div>
 
