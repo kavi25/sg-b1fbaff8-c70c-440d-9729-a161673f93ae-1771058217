@@ -6,6 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -19,9 +23,13 @@ import {
   Clock,
   ArrowLeft,
   Loader2,
-  User
+  User,
+  Edit,
+  Trash,
+  Upload
 } from "lucide-react";
 import Link from "next/link";
+import type React from "react";
 
 interface UserProfile {
   id: string;
@@ -44,6 +52,17 @@ export default function AdminUsersPage() {
   const [filteredUsers, setFilteredUsers] = useState<UserProfile[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
+  const [editForm, setEditForm] = useState({
+    full_name: "",
+    email: "",
+    role: "user",
+    avatar_url: ""
+  });
+  const [uploading, setUploading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     checkAdminAccess();
@@ -169,6 +188,135 @@ export default function AdminUsersPage() {
       month: "short",
       day: "numeric"
     });
+  };
+
+  const handleEditUser = (user: UserProfile) => {
+    setSelectedUser(user);
+    setEditForm({
+      full_name: user.full_name || "",
+      email: user.email || "",
+      role: user.role,
+      avatar_url: user.avatar_url || ""
+    });
+    setEditDialogOpen(true);
+  };
+
+  const handleDeleteUser = (user: UserProfile) => {
+    setSelectedUser(user);
+    setDeleteDialogOpen(true);
+  };
+
+  const saveUserEdit = async () => {
+    if (!selectedUser) return;
+
+    try {
+      setUploading(true);
+
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          full_name: editForm.full_name,
+          email: editForm.email,
+          role: editForm.role,
+          avatar_url: editForm.avatar_url,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", selectedUser.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "User Updated",
+        description: "User details have been updated successfully"
+      });
+
+      setEditDialogOpen(false);
+      loadUsers();
+    } catch (error: any) {
+      console.error("Error updating user:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update user",
+        variant: "destructive"
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!selectedUser) return;
+
+    try {
+      setDeleting(true);
+
+      // Delete user's profile
+      const { error } = await supabase
+        .from("profiles")
+        .delete()
+        .eq("id", selectedUser.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "User Deleted",
+        description: "User has been deleted successfully"
+      });
+
+      setDeleteDialogOpen(false);
+      setSelectedUser(null);
+      loadUsers();
+    } catch (error: any) {
+      console.error("Error deleting user:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete user",
+        variant: "destructive"
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0 || !selectedUser) {
+      return;
+    }
+
+    try {
+      setUploading(true);
+      const file = e.target.files[0];
+
+      // Upload to Supabase Storage
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${selectedUser.id}-${Date.now()}.${fileExt}`;
+      const { data, error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from("avatars")
+        .getPublicUrl(fileName);
+
+      setEditForm({ ...editForm, avatar_url: publicUrl });
+
+      toast({
+        title: "Image Uploaded",
+        description: "Avatar image uploaded successfully"
+      });
+    } catch (error: any) {
+      console.error("Error uploading avatar:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to upload avatar",
+        variant: "destructive"
+      });
+    } finally {
+      setUploading(false);
+    }
   };
 
   if (loading || !isAdmin) {
@@ -426,6 +574,24 @@ export default function AdminUsersPage() {
                                 <Badge variant="outline" className="text-xs">
                                   ID: {user.id.slice(0, 8)}...
                                 </Badge>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleEditUser(user)}
+                                  className="w-full"
+                                >
+                                  <Edit className="w-3 h-3 mr-1" />
+                                  Edit
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => handleDeleteUser(user)}
+                                  className="w-full"
+                                >
+                                  <Trash className="w-3 h-3 mr-1" />
+                                  Delete
+                                </Button>
                               </div>
                             </div>
                           </CardContent>
@@ -438,6 +604,142 @@ export default function AdminUsersPage() {
             </Card>
           </motion.div>
         </div>
+
+        {/* Edit User Dialog */}
+        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Edit User</DialogTitle>
+              <DialogDescription>
+                Update user details and permissions
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              {/* Avatar Upload */}
+              <div className="space-y-2">
+                <Label>Profile Picture</Label>
+                <div className="flex items-center gap-4">
+                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-100 to-blue-100 dark:from-purple-900 dark:to-blue-900 flex items-center justify-center overflow-hidden">
+                    {editForm.avatar_url ? (
+                      <img
+                        src={editForm.avatar_url}
+                        alt="Avatar"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <User className="w-10 h-10 text-purple-600" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarUpload}
+                      disabled={uploading}
+                      className="cursor-pointer"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Upload a new profile picture
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Full Name */}
+              <div className="space-y-2">
+                <Label htmlFor="full_name">Full Name</Label>
+                <Input
+                  id="full_name"
+                  value={editForm.full_name}
+                  onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
+                  placeholder="Enter full name"
+                />
+              </div>
+
+              {/* Email */}
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={editForm.email}
+                  onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                  placeholder="Enter email address"
+                />
+              </div>
+
+              {/* Role */}
+              <div className="space-y-2">
+                <Label htmlFor="role">Role</Label>
+                <Select
+                  value={editForm.role}
+                  onValueChange={(value) => setEditForm({ ...editForm, role: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="user">User</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setEditDialogOpen(false)}
+                disabled={uploading}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={saveUserEdit}
+                disabled={uploading}
+                className="bg-purple-600 hover:bg-purple-700"
+              >
+                {uploading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save Changes"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the user account
+                for <strong>{selectedUser?.email}</strong> and remove all their data from the system.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmDeleteUser}
+                disabled={deleting}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                {deleting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  "Delete User"
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </>
   );
